@@ -1,0 +1,30 @@
+pre {
+	display: inline-block;
+	border: 1px solid gray;
+	line-height: 1em;
+	letter-spacing: .1em;
+	font-family: "PT mono", monospace;
+	
+	background-color: #f1f8e3;
+}
+
+.pared {
+	background-color: #c9c9e5;
+	color: #112c61;
+}
+
+.lava {
+	background-color: #e5c9d0;
+	color: #b5044f;
+	border-radius: 5px;
+}
+
+.xChar {
+	background-color: #e5c9d0;
+}
+
+.star {
+	background-color: #ece998;
+	color: red;
+	border-radius: 5px;
+}
