@@ -326,7 +326,7 @@ game.addLevel([
 ]);
 game.addLevel([
 	"                           ",
-	"  ¡Cada vez más difícil!   ",
+	"  ¡Último nivel!           ",
 	"                           ",
 	" ######################### ",
 	" #%  #   %   |^     %   ⋆# ",
