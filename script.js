@@ -319,8 +319,8 @@ game.addLevel([
 	"#⋆ %   |     ^#",
 	"###############",
     "               ",
-    " (Podés apre-  ",
-    " tar la R para ",
+    " (Podés apretar",
+    " la  `R´  para ",
     " reiniciar el  ",
     "    nivel.)    ",
     "               "
@@ -423,10 +423,7 @@ var cx = canvas.getContext("2d");
 var scale = 32;
 var tileset = document.createElement("img");
 tileset.src = "tiles.png";
-tileset.addEventListener("load", canvasRenderer );
-var charTiles = document.createElement("img");
-charTiles.src = "char.png";
-charTiles.addEventListener("load", canvasRenderer);
+tileset.addEventListener("load", canvasRenderer);
 var char_count = [1, 1, 1, 1], wall_count = 0;
 
 game.refresh = canvasRenderer;
@@ -437,15 +434,18 @@ function canvasRenderer() {
 	var arr = str.split("\n");
 	canvas.width = arr[0].length * scale;
 	canvas.height = arr.length * scale;
+	cx.font = scale + "px monospace";
+	cx.textAlign = "center";
+	cx.textBaseline = "middle";
 	wall_count = 0;
 	
 	arr.forEach(function(line, y) {
 		for(var x = 0; x<line.length;x++) {
 			//fondo
 			cx.drawImage( tileset,
-			             0,         0,         scale, scale,
+			             0,         scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
-			//carácter
+			//caracter
 			if( line[x] != " " )
 				drawCanvasTile( line[x], x, y );
 		}
@@ -457,22 +457,19 @@ function drawCanvasTile( char, x, y ) {
 		case "#":
 		case "|":
 			cx.drawImage( tileset,
-			             scale * ( 2 + wall_count ), 0, scale, scale,
+			             scale * ( 1 + wall_count ), scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
 			wall_count = wall_count == 1 ? 0 : 1;
-			cx.fillStyle = "transparent";
 			break;
 		case "%":
 			cx.drawImage( tileset,
-			             scale, 0, scale, scale,
+			             scale * Math.floor(Math.random() * 3), scale * 3, scale, scale,
 			             x * scale, y * scale, scale, scale );
-			cx.fillStyle = "transparent";
 			break;
 		case "x":
 			cx.drawImage( tileset,
-			             scale * 4, 0, scale, scale,
+			             scale * 3, scale * 3, scale, scale,
 			             x* scale, y*scale, scale, scale );
-			cx.fillStyle = "transparent";
 			break;
 		case "↓":
 			drawChar( 0, x, y );
@@ -488,24 +485,20 @@ function drawCanvasTile( char, x, y ) {
 			break;
 		case "⋆":
 			cx.drawImage( tileset,
-			             scale * 5, 0, scale, scale,
+			             scale * 3, scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
-			cx.fillStyle = "transparent";
 			break;
 		default:
 			cx.fillStyle = "black";
 			cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
 			cx.fillStyle = "white";
+			cx.fillText(char, x*scale+radius, y*scale+radius);
 			break;
 	}
-	cx.font = scale + "px monospace";
-	cx.textAlign = "center";
-	cx.textBaseline = "middle";
-	cx.fillText(char, x*scale+radius, y*scale+radius);
 }
 
 function drawChar( index, x, y ) {
-	cx.drawImage( charTiles,
+	cx.drawImage( tileset,
 	             scale * index, scale * char_count[index], scale, scale,
 	             x * scale, y * scale, scale, scale );
 	char_count[index] = char_count[index] == 0 ? 1 : 0;
