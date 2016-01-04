@@ -309,6 +309,22 @@ game.addLevel([
 ]);
 game.addLevel([
     "               ",
+    " Déjà vu...    ",
+    "               ",
+	"###############",
+	"#^     |    %⋆#",
+	"#%%%% #| %    #",
+	"# %    |      #",
+	"#   %%%| %%%%%#",
+	"#⋆ %   |     ^#",
+	"###############",
+    "               ",
+    "               ",
+    "               ",
+    "               "
+]);
+game.addLevel([
+    "               ",
     " ############# ",
     " #  ⋆ %|  ^  # ",
     " #  %%%|%%   # ",
@@ -326,11 +342,21 @@ game.addLevel([
 ]);
 game.addLevel([
 	"                           ",
-	"  ¡Último nivel!           ",
-	"                           ",
 	" ######################### ",
 	" #%  #   %   |^     %   ⋆# ",
 	" #   %     % |%%%     %  # ",
+	" # %      %  |%%  % #%   # ",
+	" #⋆%  %  #  ^|   %%    %%# ",
+	" ######################### ",
+	"                           "
+]);
+game.addLevel([
+	"                           ",
+	" ¡No de nuevo, decía!      ",
+	"                           ",
+	" ######################### ",
+	" #%  #   %   |^     %   ⋆# ",
+	" #   %     % |%%%    %%  # ",
 	" # %      %  |%%  % #%   # ",
 	" #⋆%  %  #  ^|   %%    %%# ",
 	" ######################### ",
@@ -369,8 +395,11 @@ window.addEventListener("keydown", function(event) {
 	game.refresh();
 });
 
-var pre = document.createElement("pre");
-game.refresh = function() {
+
+// Acá queda sepultado el código del renderizador html
+/*var pre = document.createElement("pre");
+game.refresh = htmlRenderer;
+function htmlRenderer() {
 	var str = game.level.toString();
 	str = str.replace(/([#|]+)/g, "<span class='pared'>$1</span>");
 	str = str.replace(/(%+)/g, "<span class='lava'>$1</span>");
@@ -382,4 +411,86 @@ game.refresh();
 
 window.addEventListener("load", function() {
 document.body.appendChild( pre );
+});*/
+
+var canvas = document.createElement("canvas");
+var cx = canvas.getContext("2d");
+var scale = 20, colorDeLasParedes = "blue";
+
+game.refresh = canvasRenderer;
+game.refresh();
+
+function canvasRenderer() {
+	var str = game.level.toString();
+	var arr = str.split("\n");
+	canvas.width = arr[0].length * scale;
+	canvas.height = arr.length * scale;
+	arr.forEach(function(line, y) {
+		for(var x = 0; x<line.length;x++) 
+			drawCanvasTile( line[x], x, y );
+	});
+}
+function drawCanvasTile( char, x, y ) {
+	var radius = scale/2;
+	switch( char ) {
+		case "#":
+		case "|":
+			cx.fillStyle = colorDeLasParedes;
+			cx.fillRect(x*scale, y*scale, scale, scale);
+			cx.fillStyle = "white";
+			break;
+		case "%":
+		case "x":
+			cx.fillStyle = "red";
+			cx.fillRect(x*scale, y*scale, scale, scale);
+			cx.fillStyle = "white";
+			break;
+		case "<":
+		case "^":
+		case ">":
+		case "v":
+			cx.fillStyle = "orange";
+			cx.beginPath();
+			cx.arc( x*scale + radius, y*scale + radius, radius, 0, 2*Math.PI );
+			cx.fill();
+			cx.fillStyle = "red";
+			break;
+		default:
+			cx.fillStyle = "black";
+			break;
+	}
+	cx.font = scale + "px monospace";
+	cx.textAlign = "center";
+	cx.textBaseline = "middle";
+	cx.fillText(char, x*scale+radius, y*scale+radius);
+}
+
+var html =
+	'<p>Cambiar tamaño:'+
+	'<input type="number" name="tamaño" value="20"/></p>'+
+	'<p>Cambiar color de las paredes:'+
+		'<input type="color" name="color" value="#00f"/>'+
+	'</p>'+
+	'<button type="submit">Cambiar</button>';
+var form = document.createElement("form");
+form.innerHTML = html;
+form.addEventListener("submit", function(event) {
+	event.preventDefault();
+	// tamaño
+	var val = form.querySelector("input[name='tamaño']").value;
+	val = Math.min( 60, val);
+	val = Math.max( 7, val);
+	scale = val;
+	
+	// color
+	var col = form.querySelector('input[name="color"]').value;
+	if(col)
+		colorDeLasParedes = col;
+	
+	game.refresh();
 });
+
+window.onload = function() {
+	document.body.appendChild(canvas);
+	document.body.appendChild(form);
+}
