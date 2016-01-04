@@ -111,8 +111,8 @@ function Level( sketch ) {
 	if( stars[0].x > stars[1].x) {
 		stars.push( stars.shift() );
 	}
-	this.player = this.map.addCharacter( players[0], "^" );
-	this.mirror = this.map.addCharacter( players[1], "v" );
+	this.player = this.map.addCharacter( players[0], "↑" );
+	this.mirror = this.map.addCharacter( players[1], "↓" );
 	this.player.star = this.map.addCharacter( stars[0], "⋆" );
 	this.mirror.star = this.map.addCharacter( stars[1], "⋆" );
 	var level = this;
@@ -268,8 +268,8 @@ game.addLevel([
     " #% %  |     # ",
     " #  #  | %%% # ",
     " #  %%%|     # ",
-    " #    %|     # ",
-    " #^    |  ⋆  # ",
+    " #   %%|     # ",
+    " #^   %|  ⋆  # ",
     " ############# ",
     "               "
 ]);
@@ -319,8 +319,10 @@ game.addLevel([
 	"#⋆ %   |     ^#",
 	"###############",
     "               ",
-    "               ",
-    "               ",
+    " (Podés apre-  ",
+    " tar la R para ",
+    " reiniciar el  ",
+    "    nivel.)    ",
     "               "
 ]);
 game.addLevel([
@@ -368,24 +370,27 @@ window.addEventListener("keydown", function(event) {
 	var code = event.keyCode;
 	if(code==37) {
 		event.preventDefault();
-		game.level.player.char = "<"; game.level.mirror.char = ">";
+		game.level.player.char = "←"; game.level.mirror.char = "→";
 		game.level.player.move(new Cursor(-1,0));
 		game.level.mirror.move(new Cursor(1,0));
 	} else if(code==38) {
 		event.preventDefault();
-		game.level.player.char = "^"; game.level.mirror.char = "v";
+		game.level.player.char = "↑"; game.level.mirror.char = "↓";
 		game.level.player.move(new Cursor(0,-1));
 		game.level.mirror.move(new Cursor(0,1));
 	} else if(code==39) {
 		event.preventDefault();
-		game.level.player.char = ">"; game.level.mirror.char = "<";
+		game.level.player.char = "→"; game.level.mirror.char = "←";
 		game.level.player.move(new Cursor(1,0));
 		game.level.mirror.move(new Cursor(-1,0));
 	} else if(code==40) {
 		event.preventDefault();
-		game.level.player.char = "v"; game.level.mirror.char = "^";
+		game.level.player.char = "↓"; game.level.mirror.char = "↑";
 		game.level.player.move(new Cursor(0,1));
 		game.level.mirror.move(new Cursor(0,-1));
+	} else if(code==82) { // R: restart
+		event.preventDefault();
+		game.loadLevel();
 	}
 	if( game.level.status == 0 && game.level.player.isOnStar && game.level.mirror.isOnStar ) {
 		game.level.pause();
@@ -415,7 +420,14 @@ document.body.appendChild( pre );
 
 var canvas = document.createElement("canvas");
 var cx = canvas.getContext("2d");
-var scale = 20, colorDeLasParedes = "blue";
+var scale = 32;
+var tileset = document.createElement("img");
+tileset.src = "tiles.png";
+tileset.addEventListener("load", canvasRenderer );
+var charTiles = document.createElement("img");
+charTiles.src = "char.png";
+charTiles.addEventListener("load", canvasRenderer);
+var char_count = [1, 1, 1, 1], wall_count = 0;
 
 game.refresh = canvasRenderer;
 game.refresh();
@@ -425,9 +437,18 @@ function canvasRenderer() {
 	var arr = str.split("\n");
 	canvas.width = arr[0].length * scale;
 	canvas.height = arr.length * scale;
+	wall_count = 0;
+	
 	arr.forEach(function(line, y) {
-		for(var x = 0; x<line.length;x++) 
-			drawCanvasTile( line[x], x, y );
+		for(var x = 0; x<line.length;x++) {
+			//fondo
+			cx.drawImage( tileset,
+			             0,         0,         scale, scale,
+			             x * scale, y * scale, scale, scale);
+			//carácter
+			if( line[x] != " " )
+				drawCanvasTile( line[x], x, y );
+		}
 	});
 }
 function drawCanvasTile( char, x, y ) {
@@ -435,28 +456,46 @@ function drawCanvasTile( char, x, y ) {
 	switch( char ) {
 		case "#":
 		case "|":
-			cx.fillStyle = colorDeLasParedes;
-			cx.fillRect(x*scale, y*scale, scale, scale);
-			cx.fillStyle = "white";
+			cx.drawImage( tileset,
+			             scale * ( 2 + wall_count ), 0, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			wall_count = wall_count == 1 ? 0 : 1;
+			cx.fillStyle = "transparent";
 			break;
 		case "%":
-		case "x":
-			cx.fillStyle = "red";
-			cx.fillRect(x*scale, y*scale, scale, scale);
-			cx.fillStyle = "white";
+			cx.drawImage( tileset,
+			             scale, 0, scale, scale,
+			             x * scale, y * scale, scale, scale );
+			cx.fillStyle = "transparent";
 			break;
-		case "<":
-		case "^":
-		case ">":
-		case "v":
-			cx.fillStyle = "orange";
-			cx.beginPath();
-			cx.arc( x*scale + radius, y*scale + radius, radius, 0, 2*Math.PI );
-			cx.fill();
-			cx.fillStyle = "red";
+		case "x":
+			cx.drawImage( tileset,
+			             scale * 4, 0, scale, scale,
+			             x* scale, y*scale, scale, scale );
+			cx.fillStyle = "transparent";
+			break;
+		case "↓":
+			drawChar( 0, x, y );
+			break;
+		case "←":
+			drawChar( 1, x, y );
+			break;
+		case "→":
+			drawChar( 2, x, y );
+			break;
+		case "↑":
+			drawChar( 3, x, y );
+			break;
+		case "⋆":
+			cx.drawImage( tileset,
+			             scale * 5, 0, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			cx.fillStyle = "transparent";
 			break;
 		default:
 			cx.fillStyle = "black";
+			cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
+			cx.fillStyle = "white";
 			break;
 	}
 	cx.font = scale + "px monospace";
@@ -465,32 +504,14 @@ function drawCanvasTile( char, x, y ) {
 	cx.fillText(char, x*scale+radius, y*scale+radius);
 }
 
-var html =
-	'<p>Cambiar tamaño:'+
-	'<input type="number" name="tamaño" value="20"/></p>'+
-	'<p>Cambiar color de las paredes:'+
-		'<input type="color" name="color" value="#00f"/>'+
-	'</p>'+
-	'<button type="submit">Cambiar</button>';
-var form = document.createElement("form");
-form.innerHTML = html;
-form.addEventListener("submit", function(event) {
-	event.preventDefault();
-	// tamaño
-	var val = form.querySelector("input[name='tamaño']").value;
-	val = Math.min( 60, val);
-	val = Math.max( 7, val);
-	scale = val;
-	
-	// color
-	var col = form.querySelector('input[name="color"]').value;
-	if(col)
-		colorDeLasParedes = col;
-	
-	game.refresh();
-});
+function drawChar( index, x, y ) {
+	cx.drawImage( charTiles,
+	             scale * index, scale * char_count[index], scale, scale,
+	             x * scale, y * scale, scale, scale );
+	char_count[index] = char_count[index] == 0 ? 1 : 0;
+	cx.fillStyle = "transparent";
+}
 
 window.onload = function() {
 	document.body.appendChild(canvas);
-	document.body.appendChild(form);
 }
