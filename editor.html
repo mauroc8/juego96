@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Editor de mundo de Juego#96</title>
+	<script src="script.js"></script>
+	<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+	<h1>Editor de mundo de Juego#96</h1>
+	<div id="editor"></div>
+<script>
+
+//"use strict";
+
+function elt(name, attr) {
+	var node = document.createElement(name);
+	if( attr ) {
+		for( var key in attr )
+			if( attr.hasOwnProperty( key ) )
+				node.setAttribute( key, attr[key] );
+	}
+	return node;
+}
+
+function Editor( parent, tools ) {
+	this.canvas = elt("canvas", {tabIndex: 1});
+	this.cx = this.canvas.getContext("2d");
+	this.canvas.addEventListener("contextmenu", function(e){e.preventDefault();});
+	
+	this.toolbar = elt("form");
+	for( var tool in tools ) {
+		var radio = elt("input", {type: "radio", name: "tool", id: tool});
+		var label = elt("label", {"for": tool});
+		label.appendChild( tools[tool]( this, radio ) );
+		var toolCont = elt("div", {class: tool + " tool"});
+		toolCont.appendChild( radio );
+		toolCont.appendChild( label );
+		this.toolbar.appendChild( toolCont );
+	}
+	
+	this.cursor = new Cursor(0,0); this.cursorColor = "black";
+	this.selection = null;
+	this.map = new Map(["     ","     ","     ","     ","     "]);
+	
+	parent.appendChild( this.toolbar );
+	parent.appendChild( this.canvas );
+}
+
+Editor.prototype.drawMap = function() {
+	canvasRenderer( this.map, this.cx );
+}
+
+Editor.prototype.drawCursor = function() {
+	this.cx.strokeStyle = this.cursorColor;
+	this.cx.strokeRect( this.cursor.x * scale, this.cursor.y * scale, scale, scale );
+}
+
+Editor.prototype.drawSelection = function() {
+	if( !this.selection ) return false;
+	var width = Math.abs( this.selection[1].x - this.selection[0].x ) + 1;
+	var height = Math.abs( this.selection[1].y - this.selection[0].y ) + 1;
+	var selection_start = new Cursor(Math.min( this.selection[0].x, this.selection[1].x ),
+	                                 Math.min( this.selection[0].y, this.selection[1].y ));
+	this.cx.strokeStyle = this.cursorColor;
+	this.cx.strokeRect( selection_start.x * scale, selection_start.y * scale,
+	                   width * scale,               height * scale);
+	return true;
+}
+
+Editor.prototype.refresh = function() {
+	this.drawMap();
+	if(this.drawSelection() == false)
+		this.drawCursor();
+}
+
+Editor.prototype.moveCursor = function( movement ) {
+	this.cursor = this.cursor.add( movement );
+	if( this.cursor.x < 0 ) {
+		this.cursor.x = this.map.grid.width - 1;
+		this.cursor.y = this.cursor.y - 1;
+	}
+	if( this.cursor.x > this.map.grid.width - 1 ) {
+		this.cursor.x = 0;
+		this.cursor.y = this.cursor.y + 1;
+	}
+	this.cursor.y = Math.max( 0, Math.min( this.cursor.y, this.map.grid.height-1 ) );
+}
+
+var tools = Object.create(null);
+
+tools.text = function( editor, radio ) {
+	var input = elt("input", {type: "text", class: "hidden"});
+	
+	var cursor_caché = editor.cursor, arrows = {
+		37: new Cursor( -1, 0 ),
+		38: new Cursor( 0, -1 ),
+		39: new Cursor( 1, 0 ),
+		40: new Cursor( 0, 1 )
+	};
+	
+	input.addEventListener("input", function( event ) {
+		event.preventDefault();
+		if( this.value ) {
+			var txt = this.value;
+			this.value = "";
+			for( var i = 0; i < txt.length; i++ ) {
+				if( txt[i] == "\n" ) {
+					editor.cursor = cursor_caché
+					editor.moveCursor( new Cursor(0,1) );
+					cursor_caché = editor.cursor;
+					continue;
+				}
+				if( txt[i] == "\t" ) {
+					editor.moveCursor(new Cursor(2, 0));
+					continue;
+				}
+				editor.map.grid.set( editor.cursor, txt[i] );
+				editor.moveCursor( new Cursor(1, 0) );
+			}
+			editor.refresh();
+		}
+	});
+	input.addEventListener("keydown", function( event ) {
+		switch( event.keyCode ) {
+			case 37:
+			case 38:
+			case 39:
+			case 40: // Arrows
+				event.preventDefault();
+				editor.moveCursor( arrows[ event.keyCode ] );
+				cursor_caché = editor.cursor;
+				editor.refresh();
+				break;
+			case 8: // Backspace
+				event.preventDefault();
+				editor.moveCursor( new Cursor(-1, 0) );
+				editor.map.grid.set( editor.cursor, " " );
+				editor.refresh();
+				break;
+			case 46: // Supr
+				event.preventDefault();
+				editor.map.grid.set( editor.cursor, " " );
+				editor.refresh();
+				break;
+			case 13:
+				event.preventDefault();
+				editor.cursor = cursor_caché
+				editor.moveCursor( new Cursor(0,1) );
+				cursor_caché = editor.cursor;
+				editor.refresh();
+				break;
+			default:
+				//console.log( event.keyCode );
+				break;
+		}
+	}, false);
+	
+	var div = elt("div");
+	div.textContent = "Texto";
+	div.appendChild( input );
+	radio.addEventListener("change", function() {
+		removeEvents( editor.canvas );
+		editor.selection = null; editor.refresh();
+		
+		editor.canvas.onclick = function(event) {
+			event.preventDefault();
+			input.focus();
+			editor.cursor = getCursorPos(this, event);
+			cursor_caché = editor.cursor;
+			editor.refresh();
+		}
+	});
+	return div;
+}
+
+function removeEvents( elem ) {
+	elem.onmousedown = elem.onmousemove = elem.onmouseup
+	= elem.onmouseover = elem.onmouseout = elem.onclick
+	= elem.onkeydown = elem.onkeyup = elem.onkeypress
+	= elem.onfocus = elem.onblur = null;
+}
+
+function getRelativePos( elem, event ) {
+	var rect = elem.getBoundingClientRect();
+	return new Cursor(event.clientX - rect.left,
+	                  event.clientY - rect.top);
+}
+
+function getCursorPos( elem, event ) {
+	var pos = getRelativePos( elem, event );
+	pos.x = Math.floor(pos.x / scale);
+	pos.y = Math.floor(pos.y / scale);
+	return pos;
+}
+
+tools.brush = function( editor, radio ) {
+	var div = elt("div");
+	var brush = " ", mouse = 0;
+		
+	radio.addEventListener("change", function() {
+		removeEvents( editor.canvas );
+		editor.selection = null; editor.refresh();
+		
+		editor.canvas.onmousedown = function( event ) {
+			event.preventDefault();
+			mouse = event.which;
+			handleMouseEvent( event );
+		}
+		editor.canvas.onmousemove = function( event ) {
+			event.preventDefault();
+			var curs = getCursorPos( this, event );
+			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
+			handleMouseEvent( event );
+			editor.refresh();
+		}
+		editor.canvas.onmouseout = function() {
+			mouse = 0;
+		}
+		editor.canvas.onmouseup = function() {
+			mouse = 0;
+		}
+	});
+	
+	function handleMouseEvent( event ) {
+		if(mouse == 1) {
+			editor.map.grid.set( editor.cursor, brush );
+			editor.refresh();
+			return;
+		}
+		if(mouse == 2) {
+			brush = editor.map.grid.get( editor.cursor );
+			return;
+		}
+		if(mouse == 3) {
+			editor.map.grid.set( editor.cursor, " " );
+			editor.refresh();
+			return;
+		}
+	}
+	
+	
+	var modal = createModal("Pinceles");
+	
+	var dragEdit = new Editor( modal, {} );
+	dragEdit.map = new Map([
+		" #⋆",
+		" %^"
+	]);
+	dragEdit.refresh();
+	dragEdit.canvas.addEventListener("click", function(event) {
+		event.preventDefault();
+		
+		var curs = getCursorPos( this, event );
+		if( dragEdit.map.grid.isInside(curs) ) dragEdit.cursor = curs;
+		
+		brush = dragEdit.map.grid.get( dragEdit.cursor );
+		dragEdit.refresh();
+	});
+	
+	var span = elt("span");
+	span.textContent = "Pincel";
+	div.appendChild( span );
+	div.appendChild( modal );
+	
+	return div;
+}
+
+tools.selection = function( editor, radio ) {
+	var div = elt("div");
+	div.textContent = "Selección";
+	var modal = createModal("Funciones");
+	modal.id = "selectionOpt";
+	div.appendChild(modal);
+	var options = {
+		"select": {
+			content: "⇲ Seleccionar",
+			title: "Arrastrar el mouse para seleccionar una zona del mapa. También puede hacerse con 'Ctrl'."
+		},
+		"move": {
+			content: "∗ Mover",
+			title: "Arrastrar el mouse para mover la selección. Para copiar, mantener 'Shift'. Mantener 'Ctrl' para crear una nueva selección."
+		}
+	};
+	var buttons = {
+		"erase": {
+			content: "↩ Borrar",
+			title: "Borrar selección. También puede hacerse con 'Supr'.",
+			click: function() {
+				if( editor.selection == null )
+					return editor.map.grid.set( editor.cursor, " " );
+				selectionForEach( editor.selection, function(cursor) {
+					editor.map.grid.set( cursor, " ");
+					editor.refresh();
+				});
+			}
+		},
+		"invertX": {
+			content:"⇄ Invertir horizontal",
+			title: "Invertir en el eje horizontal",
+			click: function() {
+				if( editor.selection == null ) return false;
+				
+				var str = "";
+				var selection = selectionForEach(editor.selection, function(cursor) {
+					str += editor.map.grid.get(cursor);
+				});
+				
+				var width = selection[1].x - selection[0].x + 1, arr = [];
+				for( var i = 0; i < str.length; i += width )
+					arr.push( str.slice( i, i+width ) );
+				
+				arr = arr.map(function(line) {
+					return line.split("").reverse().join("");
+				});
+				
+				var str = arr.join(""), i = 0;
+				selectionForEach(editor.selection, function(cursor) {
+					editor.map.grid.set( cursor, str[i] );
+					i++;
+				});
+				editor.refresh();
+			}
+		},
+		"invertY":{
+			content: "⇅ Invertir vertical",
+			title: "Invertir en el eje vertical",
+			click: function() {
+				if( editor.selection == null ) return false;
+				
+				var str = "";
+				var selection = selectionForEach(editor.selection, function(cursor) {
+					str += editor.map.grid.get(cursor);
+				});
+				
+				var width = selection[1].x - selection[0].x + 1, arr = [];
+				for( var i = 0; i < str.length; i += width )
+					arr.unshift( str.slice( i, i+width ) );
+				
+				var str = arr.join(""), i = 0;
+				selectionForEach(editor.selection, function(cursor) {
+					editor.map.grid.set( cursor, str[i] );
+					i++;
+				});
+				editor.refresh();
+			}
+		}	
+	}
+	for( var key in options ) 
+		if( options.hasOwnProperty(key) )
+			(function(key) {
+				var radio = elt("input", {
+					type: "radio",
+					id: key,
+					name: "selectOption"
+				});
+				var label = elt("label", {
+					title: options[key].title,
+					"for": key
+				});
+				
+				label.innerHTML = options[key].content;
+				radio.addEventListener("change", function(){ tool = key; });
+				var div = elt("div")
+				div.appendChild(radio);
+				div.appendChild(label);
+				modal.appendChild( div );
+			})(key);
+			
+	for( var key in buttons ) {
+		if( buttons.hasOwnProperty(key) ) {
+			var button = elt("button", {
+				type: "button",
+				title: buttons[key].title,
+				id: key
+			});
+			button.textContent = buttons[key].content;
+			button.onclick = buttons[key].click;
+			modal.appendChild(button);
+		}
+	}
+	
+	modal.onclick = function() { editor.canvas.focus() }
+	modal.querySelector("#select").checked = true;
+	
+	var mouse = 0, tool = "select";
+	var oldSelection, relativePosFromSelection;
+	radio.addEventListener("change", function() {
+		removeEvents( editor.canvas );
+				
+		editor.canvas.onmousedown = function(event) {
+			mouse = event.which;
+			if( mouse == 1 ) {
+				if( ctrlKey || tool == "select" ) {
+					
+					var curs = getCursorPos( this, event );
+					if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
+					
+					editor.selection = [editor.cursor, editor.cursor];
+					editor.refresh();
+				} else if( tool == "move" ) {
+					var i = 0, current;
+					
+					var curs = getCursorPos( this, event );
+					if( editor.map.grid.isInside(curs) ) relativePosFromSelection = curs;
+
+					if( editor.selection == null )
+						editor.selection = [ relativePosFromSelection, relativePosFromSelection ];
+					oldSelection = editor.selection.slice(0);
+				}
+			}
+		}
+		editor.canvas.onmousemove = function(event) {
+			event.preventDefault();
+			
+			var curs = getCursorPos( this, event );
+			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
+
+			if( mouse == 1 ) {
+				if( ctrlKey || tool == "select" ) {
+					if(editor.selection != null)
+						editor.selection[1] = editor.cursor;
+				} else if( tool == "move" ) {
+					var current_pos = getCursorPos( this, event );
+					var change = relativePosFromSelection.minus( current_pos );
+					relativePosFromSelection = current_pos;
+					editor.selection = editor.selection.map(function(curs) {
+						return curs.minus( change );
+					});
+				}
+				editor.refresh();
+			}
+		};
+		editor.canvas.onmouseout = editor.canvas.onmouseup = function(event) {
+			event.preventDefault();
+			if( mouse == 1 ) {
+				if( tool == "move" && !ctrlKey ) {
+					var i = 0;
+					var selectedText = "";
+					selectionForEach( oldSelection, function(cursor) {
+						selectedText += editor.map.grid.get(cursor) || " ";
+						if( !shiftKey ) editor.map.grid.set(cursor, " ");
+					});
+					selectionForEach( editor.selection, function(cursor) {
+						if(selectedText[i] == " ") return i++;
+						editor.map.grid.set( cursor, selectedText[i] );
+						i++;
+					});
+				}
+				if( editor.selection != null && editor.selection[0].isEqualTo( editor.selection[1] ) )
+					editor.selection = null;
+				editor.refresh();
+			}
+			mouse = 0;
+		}
+		var ctrlKey, shiftKey;
+		editor.canvas.onkeydown = function(event) {
+			var code = event.keyCode;
+			switch( code ) {
+				case 17:
+				ctrlKey = true;
+				break;
+				case 16:
+				shiftKey = true;
+				break;
+				case 27: // Esc
+				modal.querySelector("#select").checked = true;
+				break;
+				case 46: // Supr
+				modal.querySelector("#erase").click();
+				break;
+			}
+		};
+		editor.canvas.onkeyup = function() {
+			ctrlKey = shiftKey = false;
+		}
+	});
+	
+	function selectionForEach( selection, fn ) {
+		var selection = [
+			new Cursor(Math.min( selection[0].x, selection[1].x),
+			           Math.min( selection[0].y, selection[1].y)),
+			new Cursor(Math.max( selection[0].x, selection[1].x),
+			           Math.max( selection[0].y, selection[1].y))];
+		for( var y = selection[0].y; y <= selection[1].y; y++)
+			for( var x = selection[0].x; x <= selection[1].x; x++ ) {
+				fn( new Cursor( x, y ) );
+			}
+		return selection;
+	}
+	
+	return div;
+}
+
+function createModal(title) {
+	var opt = elt("div", {class: "options"});
+	
+	var drag = elt("div", {class: "drag"});
+	drag.textContent = title;
+	var drag_mouse = 0, drag_pos;
+	drag.addEventListener("mousedown", function(event) {
+		event.preventDefault();
+		var rect = opt.getBoundingClientRect();
+		drag_pos = {x: event.clientX - rect.left,
+						y: event.clientY - rect.top};
+		drag_mouse = event.which;
+	});
+	window.addEventListener("mousemove", function(event) {
+		event.preventDefault();
+		if(drag_mouse == 1) {
+			opt.style.left = event.clientX - drag_pos.x + "px";
+			opt.style.top = event.clientY - drag_pos.y + "px";
+		}
+	});
+	drag.addEventListener("mouseup", function(event) {
+		event.preventDefault();
+		drag_mouse = 0;
+	});
+	opt.appendChild( drag );
+	return opt;
+}
+
+tools.changeSize = function( editor, radio ) {
+	var div = elt("div");
+	div.textContent = "Ajustar tamaño";
+	var opt = createModal("Tamaño");
+	var TVControllers = elt("div", {class: "TVControllers"});
+	var directions = ["up", "down", "left", "right"];
+	directions.forEach(function(direction) {
+		var button = elt("button", { type: "button", class:direction });
+		button.textContent = direction == "down" || direction == "right" ? "+" : "-" ;
+		TVControllers.appendChild( button );
+		button.onclick = function(){
+			var sketch = editor.map.toString().split("\n");
+			switch( this.className ){
+				case "up":
+				sketch.pop()
+				break;
+				case "down":
+				var newLine = '';
+				for (var i = editor.map.grid.width - 1; i >= 0; i--) {
+					newLine += ' ';
+				};
+				sketch.push( newLine );
+				break;
+				case "left":
+				sketch = sketch.map(function(line){
+					return line.slice( 0, line.length-1 );
+				});
+				break;
+				case "right":
+				sketch = sketch.map(function(line) {
+					return line + " ";
+				});
+				break;
+			}
+			editor.map = new Map(sketch);
+			editor.refresh();
+			
+		};
+	});
+	
+	opt.appendChild( TVControllers );
+	
+	radio.addEventListener("change", function() {
+		removeEvents( editor.canvas );
+	});
+	
+	div.appendChild( opt );
+	return div;
+}
+
+tools.test = function( editor, radio ) {
+	var div = elt("div")
+	div.textContent = "Jugar";
+	var modal = createModal("Info");
+	modal.id = "testInfo";
+	var info = elt("pre");
+	modal.appendChild(info);
+	div.appendChild(modal);
+	
+	radio.addEventListener("change", function() {
+		removeEvents( editor.canvas );
+		info.textContent = "";
+		
+		if( editor.map.grid.look("^").length == 2 && editor.map.grid.look("⋆").length == 2 ) {
+			var map = editor.map.toString().split("\n");
+			var game = new Game();
+			game.addLevel(map);
+			game.loadLevel();
+			info.textContent = "☑ Mapa cargado exitosamente:\n[\""+ map.join('",\n"') + "\"]\n"
+								+ info.textContent;
+			game.level.onStatusChange = function status() {
+				info.textContent = "☑ Nivel finalizado.\n" + info.textContent;
+				setTimeout(function() {
+					game.loadLevel();
+					game.level.onStatusChange = status;
+				}, 1000);
+			}
+			game.refresh = function() {
+				canvasRenderer( game.level.map, editor.cx );
+			}
+			game.refresh();
+		} else {
+			info.textContent = "☒ ERROR: Tiene que haber 2 personajes y 2 estrellas para poder jugar.";
+		}
+	});
+	
+	return div;
+}
+
+var editor = new Editor( document.querySelector("#editor"), tools );
+editor.refresh();
+
+</script>
+</body>
+</html>

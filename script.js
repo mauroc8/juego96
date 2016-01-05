@@ -11,6 +11,9 @@ Cursor.prototype.add = function( cursor, y ) {
 		return new Cursor( this.x+cursor.x, this.y+cursor.y );
 	else return new Cursor(this.x+cursor, this.y+y);
 }
+Cursor.prototype.minus = function( cursor ) {
+	return new Cursor( this.x - cursor.x, this.y-cursor.y);
+}
 Cursor.prototype.isEqualTo = function( cursor ) {
 	return this.x == cursor.x && this.y == cursor.y;
 }
@@ -29,7 +32,7 @@ Grid.prototype.toString = function() {
 	for(var i = 0; i < this.height; i++) {
 		for(var j = 0; j < this.width; j++)
 			str += this.grid[j + i*this.width] || " ";
-		str += "\n";
+		if(i<this.height-1) str += "\n";
 	}
 	return str;
 }
@@ -122,7 +125,7 @@ function Level( sketch ) {
 			return false;
 		} if(char=="%") {
 			this.freeze = true;
-			this.char = "x";
+			this.char = "¬";
 			level.status = -1;
 			level.onStatusChange();
 		}
@@ -160,6 +163,41 @@ function Game() {
 	this.levelSketches = [];
 	this.currentLevel = 0; // current level number
 	this.level = null;
+	
+	var game = this;
+	window.addEventListener("keydown", function(event) {
+		var code = event.keyCode;
+		if(code==37) {
+			event.preventDefault();
+			game.level.player.char = "←"; game.level.mirror.char = "→";
+			game.level.player.move(new Cursor(-1,0));
+			game.level.mirror.move(new Cursor(1,0));
+		} else if(code==38) {
+			event.preventDefault();
+			game.level.player.char = "↑"; game.level.mirror.char = "↓";
+			game.level.player.move(new Cursor(0,-1));
+			game.level.mirror.move(new Cursor(0,1));
+		} else if(code==39) {
+			event.preventDefault();
+			game.level.player.char = "→"; game.level.mirror.char = "←";
+			game.level.player.move(new Cursor(1,0));
+			game.level.mirror.move(new Cursor(-1,0));
+		} else if(code==40) {
+			event.preventDefault();
+			game.level.player.char = "↓"; game.level.mirror.char = "↑";
+			game.level.player.move(new Cursor(0,1));
+			game.level.mirror.move(new Cursor(0,-1));
+		} else if(code==82) { // R: restart
+			event.preventDefault();
+			game.loadLevel();
+		}
+		if( game.level.status == 0 && game.level.player.isOnStar && game.level.mirror.isOnStar ) {
+			game.level.pause();
+			game.level.status = 1;
+			game.level.onStatusChange();
+		}
+		game.refresh();
+	});
 }
 
 Game.prototype.addLevel = function( sketch ) {
@@ -203,237 +241,22 @@ Game.prototype.refresh = function() {}
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-var game = new Game();
-game.addLevel([
-    "               ",
-    " Te movés con  ",
-    " las flechitas ",
-    "               ",
-    "   #########   ",
-    "   # ⋆ | ^ #   ",
-    "   #   |   #   ",
-    "   #   |   #   ",
-    "   #   |   #   ",
-    "   #   |   #   ",
-    "   # ^ | ⋆ #   ",
-    "   #########   ",
-    "               ",
-    " Llegá hasta   ",
-    " las estrellas.",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " Los % son la- ",
-    " va. Si los pi-",
-    " sás te morís! ",
-    "               ",
-    "  ###########  ",
-    "  # ⋆  |  ^ #  ",
-    "  #    |    #  ",
-    "  #    |    #  ",
-    "  #    |%%% #  ",
-    "  #%%% |    #  ",
-    "  # ^  |  ⋆ #  ",
-    "  ###########  ",
-    "               ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " Los # son pa- ",
-    " redes, te pue-",
-    " den ayudar.   ",
-    "               ",
-    "  ###########  ",
-    "  # ⋆  |  ^ #  ",
-    "  #  # |    #  ",
-    "  #    |    #  ",
-    "  #    |    #  ",
-    "  #    |    #  ",
-    "  # ^  |⋆   #  ",
-    "  ###########  ",
-    "               ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " A ver si re-  ",
-    " solvés ésto...",
-    "               ",
-    " ############# ",
-    " #  ⋆  |^    # ",
-    " #     |    %# ",
-    " #     |%% %%# ",
-    " #% %  |     # ",
-    " #  #  | %%% # ",
-    " #  %%%|     # ",
-    " #   %%|     # ",
-    " #^   %|  ⋆  # ",
-    " ############# ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " Bien, probe-  ",
-    " mos con éste  ",
-    "               ",
-	"###############",
-	"#^     |    %⋆#",
-	"#%%%% #| %    #",
-	"# %    |      #",
-	"#   %%%| %%%%%#",
-	"#⋆     |     ^#",
-	"###############",
-    "               ",
-    "               ",
-    "               ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " ############# ",
-    " #  ⋆% | #^  # ",
-    " # %   |  %% # ",
-    " ##    |     # ",
-    " # %%% | %  %# ",
-    " #     |     # ",
-    " #% %  |   % # ",
-    " #   % |     # ",
-    " # %   | %%%%# ",
-    " #   % |     # ",
-    " #  %%%|% %  # ",
-    " #  ^ %|  ⋆  # ",
-    " ############# ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " Déjà vu...    ",
-    "               ",
-	"###############",
-	"#^     |    %⋆#",
-	"#%%%% #| %    #",
-	"# %    |      #",
-	"#   %%%| %%%%%#",
-	"#⋆ %   |     ^#",
-	"###############",
-    "               ",
-    " (Podés apretar",
-    " la  `R´  para ",
-    " reiniciar el  ",
-    "    nivel.)    ",
-    "               "
-]);
-game.addLevel([
-    "               ",
-    " ############# ",
-    " #  ⋆ %|  ^  # ",
-    " #  %%%|%%   # ",
-    " #   %%|%%%% # ",
-    " #    %|   % # ",
-    " #%%   |     # ",
-    " # %%% |    %# ",
-    " # #   |  %%%# ",
-    " #   %%| %%%%# ",
-    " #  %%%|     # ",
-    " #   %%|   %%# ",
-    " #  ^  |  ⋆ %# ",
-    " ############# ",
-    "               "
-]);
-game.addLevel([
-	"                           ",
-	" ######################### ",
-	" #%  #   %   |^     %   ⋆# ",
-	" #   %     % |%%%     %  # ",
-	" # %      %  |%%  % #%   # ",
-	" #⋆%  %  #  ^|   %%    %%# ",
-	" ######################### ",
-	"                           "
-]);
-game.addLevel([
-	"                           ",
-	" ¡No de nuevo, decía!      ",
-	"                           ",
-	" ######################### ",
-	" #%  #   %   |^     %   ⋆# ",
-	" #   %     % |%%%    %%  # ",
-	" # %      %  |%%  % #%   # ",
-	" #⋆%  %  #  ^|   %%    %%# ",
-	" ######################### ",
-	"                           "
-]);
-game.loadLevel();
-
-window.addEventListener("keydown", function(event) {
-	var code = event.keyCode;
-	if(code==37) {
-		event.preventDefault();
-		game.level.player.char = "←"; game.level.mirror.char = "→";
-		game.level.player.move(new Cursor(-1,0));
-		game.level.mirror.move(new Cursor(1,0));
-	} else if(code==38) {
-		event.preventDefault();
-		game.level.player.char = "↑"; game.level.mirror.char = "↓";
-		game.level.player.move(new Cursor(0,-1));
-		game.level.mirror.move(new Cursor(0,1));
-	} else if(code==39) {
-		event.preventDefault();
-		game.level.player.char = "→"; game.level.mirror.char = "←";
-		game.level.player.move(new Cursor(1,0));
-		game.level.mirror.move(new Cursor(-1,0));
-	} else if(code==40) {
-		event.preventDefault();
-		game.level.player.char = "↓"; game.level.mirror.char = "↑";
-		game.level.player.move(new Cursor(0,1));
-		game.level.mirror.move(new Cursor(0,-1));
-	} else if(code==82) { // R: restart
-		event.preventDefault();
-		game.loadLevel();
-	}
-	if( game.level.status == 0 && game.level.player.isOnStar && game.level.mirror.isOnStar ) {
-		game.level.pause();
-		game.level.status = 1;
-		game.level.onStatusChange();
-	}
-	game.refresh();
-});
-
-
-// Acá queda sepultado el código del renderizador html
-/*var pre = document.createElement("pre");
-game.refresh = htmlRenderer;
-function htmlRenderer() {
-	var str = game.level.toString();
-	str = str.replace(/([#|]+)/g, "<span class='pared'>$1</span>");
-	str = str.replace(/(%+)/g, "<span class='lava'>$1</span>");
-	str = str.replace(/⋆/g, "<span class='star'>⋆</span>");
-	str = str.replace(/x/g, "<span class='xChar'>x</span>");
-	pre.innerHTML = str;
-}
-game.refresh();
-
-window.addEventListener("load", function() {
-document.body.appendChild( pre );
-});*/
-
-var canvas = document.createElement("canvas");
-var cx = canvas.getContext("2d");
 var scale = 32;
 var tileset = document.createElement("img");
 tileset.src = "tiles.png";
-tileset.addEventListener("load", canvasRenderer);
 var char_count = [1, 1, 1, 1], wall_count = 0;
+var onTilesetLoad = function() { }, tilesetLoaded = false;
+tileset.addEventListener("load", function() {
+	tilesetLoaded = true;
+	onTilesetLoad();
+});
 
-game.refresh = canvasRenderer;
-game.refresh();
-
-function canvasRenderer() {
-	var str = game.level.toString();
+function canvasRenderer(map, cx) {
+	var str = map.toString();
 	var arr = str.split("\n");
-	canvas.width = arr[0].length * scale;
-	canvas.height = arr.length * scale;
+	cx.canvas.width = arr[0].length * scale + 2;
+	cx.canvas.height = arr.length * scale + 2;
+	cx.translate(1,1);
 	cx.font = scale + "px monospace";
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
@@ -447,11 +270,12 @@ function canvasRenderer() {
 			             x * scale, y * scale, scale, scale);
 			//caracter
 			if( line[x] != " " )
-				drawCanvasTile( line[x], x, y );
+				drawCanvasTile( cx, line[x], x, y );
 		}
 	});
 }
-function drawCanvasTile( char, x, y ) {
+
+function drawCanvasTile( cx, char, x, y ) {
 	var radius = scale/2;
 	switch( char ) {
 		case "#":
@@ -466,22 +290,23 @@ function drawCanvasTile( char, x, y ) {
 			             scale * Math.floor(Math.random() * 3), scale * 3, scale, scale,
 			             x * scale, y * scale, scale, scale );
 			break;
-		case "x":
+		case "¬":
 			cx.drawImage( tileset,
 			             scale * 3, scale * 3, scale, scale,
 			             x* scale, y*scale, scale, scale );
 			break;
 		case "↓":
-			drawChar( 0, x, y );
+		case "^":
+			drawChar( cx, 0, x, y );
 			break;
 		case "←":
-			drawChar( 1, x, y );
+			drawChar( cx, 1, x, y );
 			break;
 		case "→":
-			drawChar( 2, x, y );
+			drawChar( cx, 2, x, y );
 			break;
 		case "↑":
-			drawChar( 3, x, y );
+			drawChar( cx, 3, x, y );
 			break;
 		case "⋆":
 			cx.drawImage( tileset,
@@ -497,14 +322,10 @@ function drawCanvasTile( char, x, y ) {
 	}
 }
 
-function drawChar( index, x, y ) {
+function drawChar( cx, index, x, y ) {
 	cx.drawImage( tileset,
 	             scale * index, scale * char_count[index], scale, scale,
 	             x * scale, y * scale, scale, scale );
 	char_count[index] = char_count[index] == 0 ? 1 : 0;
 	cx.fillStyle = "transparent";
-}
-
-window.onload = function() {
-	document.body.appendChild(canvas);
 }

@@ -1,30 +1,113 @@
-pre {
-	display: inline-block;
-	border: 1px solid gray;
-	line-height: 1em;
-	letter-spacing: .1em;
-	font-family: "PT mono", monospace;
-	
-	background-color: #f1f8e3;
+.hidden {opacity:0;width:0;height:0;position:fixed;top:0;left:0;}
+form, canvas { margin: 0; padding: 0; }
+
+.tool {
+  display: inline-block;
 }
 
-.pared {
-	background-color: #c9c9e5;
-	color: #112c61;
+.tool>input[type="radio"] {
+  display: none;
 }
 
-.lava {
-	background-color: #e5c9d0;
-	color: #b5044f;
-	border-radius: 5px;
+.tool>label {
+  width: 9em;
+  height: 3em;
+  border: 1px solid black;
+  display: inline-block;
+  overflow: hidden;
 }
 
-.xChar {
-	background-color: #e5c9d0;
+.tool label>div {
+  width: 100%;
+  height: 100%;
+  padding: .5em;
 }
 
-.star {
-	background-color: #ece998;
-	color: red;
-	border-radius: 5px;
+.tool>input[type="radio"]:checked + label {
+  color: red;
+  border-color: red;
+}
+
+.options {
+  display: none;
+  position: fixed;
+  left: 4em;
+  top: 20em;
+  background-color: lightgray;
+  padding: 0.2em;
+  border: 1px solid gray;
+  z-index: 3;
+  overflow: hidden;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  line-height: 1em;
+  color: black;
+  font: 0.9em sans-serif;
+}
+.options .drag {
+  margin: -0.2em;
+  margin-bottom:0;
+  padding: 0.2em;
+  width: 100%;
+  height: 1em;
+  background: linear-gradient( rgb(0,120,255), rgb(0,20,255) );
+  margin-bottom: 0.2em;
+  color: white;
+  text-shadow: 1px 1px 1px rgba(0,0,0,.5);
+}
+
+.options>canvas {
+  margin: 0;
+}
+
+.tool input[type="radio"]:checked + label .options {
+  display: inline-block;
+}
+
+.options input {
+  width: 2em;
+}
+
+.TVControllers {
+  margin: .5em;
+  width: 6em;
+  height: 6em;
+  position: relative;
+}
+
+.TVControllers button {
+  font-size: inherit;
+  width: 2em;
+  height: 2em;
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.TVControllers .up, .TVControllers .down {
+  left: 2em;
+}
+
+.TVControllers .left, .TVControllers .right {
+  top: 2em;
+}
+
+.TVControllers .down {
+  top: 4em;
+}
+.TVControllers .right {
+  left: 4em;
+}
+#selectionOpt button { display: block; width: 100%; text-align: left;}
+#selectionOpt > button:nth-child(4) {margin-top: .4em;}
+
+#testInfo pre {
+  width: 18em;
+  white-space: pre-wrap;
+  font-size: 1em;
+  background-color: rgb(240, 240, 240);
+  padding: .4em;
+  margin: .4em;
+  margin-top: .8em;
+  max-height: 20em;
+  overflow-y: auto;
 }
