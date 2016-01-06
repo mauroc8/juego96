@@ -27,7 +27,7 @@ function elt(name, attr) {
 }
 
 function Editor( parent, tools ) {
-	this.canvas = elt("canvas", {tabIndex: 1});
+	this.canvas = elt("canvas");
 	this.cx = this.canvas.getContext("2d");
 	this.canvas.addEventListener("contextmenu", function(e){e.preventDefault();});
 	
@@ -35,7 +35,12 @@ function Editor( parent, tools ) {
 	
 	this.cursor = new Cursor(0,0); this.cursorColor = "black";
 	this.selection = null; this.history = []; this.historyIndex = 0;
-	this.map = new Map(["     ","     ","     ","     ","     "]);
+	try {
+		var maps = JSON.parse( localStorage.getItem("mapList") );
+		this.map = new Map( JSON.parse( localStorage.getItem( "map" + maps[0] ) ) );
+	} catch(e) {
+		this.map = new Map(["     ","     ","     ","     ","     "]);
+	}
 	
 	parent.appendChild( this.toolbar );
 	parent.appendChild( this.canvas );
@@ -118,9 +123,6 @@ Editor.prototype.refresh = function( history ) {
 		this.history.unshift( this.map.toString() );
 		if( this.history.length > 50 )
 			this.history.pop();
-	} else if( history === "reset" ) {
-		this.history = [ this.map.toString() ];
-		this.historyIndex = 0;
 	}
 	
 	this.drawMap();
@@ -301,7 +303,9 @@ tools.brush = function( editor, radio ) {
 	removeEvents( document.body );
 	dragEdit.map = new Map([
 		" %^",
-		"#|⋆"
+		"#|⋆",
+		"°$◷",
+		"◴◵◶"
 	]);
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
@@ -356,10 +360,11 @@ tools.selection = function( editor, radio ) {
 			title: "Borrar selección. También puede hacerse con 'Supr'.",
 			click: function() {
 				if( editor.selection == null )
-					return editor.map.grid.set( editor.cursor, " " );
-				selectionForEach( editor.selection, function(cursor) {
-					editor.map.grid.set( cursor, " ");
-				});
+					editor.map.grid.set( editor.cursor, " " );
+				else
+					selectionForEach( editor.selection, function(cursor) {
+						editor.map.grid.set( cursor, " ");
+					});
 				editor.refresh( true );
 			}
 		},
@@ -530,6 +535,10 @@ tools.selection = function( editor, radio ) {
 			}
 			mouse = 0;
 		}
+		window.onkeydown = function(event) {
+			if( event.keyCode == 46 ) // supr.
+				modal.querySelector("#erase").click();
+		}
 	});
 	
 	function selectionForEach( selection, fn ) {
@@ -657,20 +666,21 @@ tools.maps = function( editor, radio ) {
 	function ACTUALIZAR() {
 		list.textContent = "";
 		var maps = JSON.parse(localStorage.getItem("mapList"));
-		maps.forEach(function(name) {
-			if( name.indexOf(search.value) == 0 ) {
-				var li  = elt("li");
-				li.textContent = name;
-				li.onclick = function() {
-					Array.prototype.forEach.call(list.children, function(child) {
-						child.className = "";
-					});
-					this.className = "active";
-					search.value = this.textContent;
+		if(maps)
+			maps.forEach(function(name) {
+				if( name.indexOf(search.value) == 0 ) {
+					var li  = elt("li");
+					li.textContent = name;
+					li.onclick = function() {
+						Array.prototype.forEach.call(list.children, function(child) {
+							child.className = "";
+						});
+						this.className = "active";
+						search.value = this.textContent;
+					}
+					list.appendChild(li);
 				}
-				list.appendChild(li);
-			}
-		});
+			});
 		var first = list.querySelector("li")
 		if(!first) {
 			list.innerHTML = "<small style='opacity:.5;font-style:italic'>No se encontró ningún mapa.</small>";
@@ -689,9 +699,9 @@ tools.maps = function( editor, radio ) {
 			else
 				return createPopUp("ERROR", "Tenés que ingresar<br />un nombre para guardar.");
 		}
-		var maps = JSON.parse(localStorage.getItem("mapList"));
+		var maps = JSON.parse(localStorage.getItem("mapList")) || [];
 		if( maps.indexOf(nombre) != -1 )
-			maps.splice( maps.indexOf(nombre), 1 );
+				maps.splice( maps.indexOf(nombre), 1 );
 		maps.unshift( nombre );
 		localStorage.setItem( "mapList", JSON.stringify(maps) );
 		localStorage.setItem( "map"+ nombre, JSON.stringify( editor.map.toString().split("\n") ) ); 
@@ -706,7 +716,7 @@ tools.maps = function( editor, radio ) {
 		var map = JSON.parse( localStorage.getItem( "map"+ selected.textContent ) );
 		if( !map ) return createPopUp("ERROR", "Al parecer el mapa que querés<br />abrir no existe.");
 		editor.map = new Map( map );
-		editor.refresh( "reset" );
+		editor.refresh( true );
 		search.value = "";
 		var nombre = selected.textContent;
 		var maps = JSON.parse(localStorage.getItem("mapList"));
@@ -734,10 +744,12 @@ tools.maps = function( editor, radio ) {
 	
 	imp.addEventListener("click", function() {
 		var popup = createPopUp("Importar",
-			"<p>Ingresar el mapa en formato<br />JSON (array de strings)</p>"+
-			"<textarea></textarea>");
+			"<p>Ingresar el mapa en formato<br />JSON (array de strings)</p>");
+		var textarea = elt("textarea");
+		textarea.select();
+		document.execCommand("paste")
 		var btn = elt("button", {type: "button"}); btn.textContent = "Importar";
-		popup.appendChild(btn);
+		addChilds(popup, textarea, elt("br"), btn);
 		btn.onclick = function() {
 			try {
 				var textarea = popup.querySelector("textarea");
@@ -748,20 +760,36 @@ tools.maps = function( editor, radio ) {
 				                                                  'Ingresar como array en formato JSON.<br />'+
 				                                                  'Ej.: ["   ", "   ", "   "];');
 				editor.map = new Map(arr);
-				editor.refresh( "reset" );
+				editor.refresh( true );
 				popup.querySelector(".popUpClose").click();
 			} catch(e) {
 				return createPopUp("ERROR", e.toString() );
 			}
 		}
+		if( list.querySelector(".active") )
+			list.querySelector("li").className = "";
 	});
 	exp.addEventListener("click", function() {
 		var popup = createPopUp("Exportar",
 			"<p>Tu mapa:</p><hr />");
-		var pre = elt("textarea", {class: "mapExport"});
+		var textarea = elt("textarea", {class: "mapExport"});
 		var arr = editor.map.toString().split("\n");
-		pre.value = JSON.stringify( arr ).replace(/"\,"/g, '",\n"');
-		popup.appendChild(pre);
+		textarea.value = JSON.stringify( arr ).replace(/"\,"/g, '",\n"');
+		popup.appendChild(textarea);
+		var btn = elt("button", {type: "button"});
+		btn.textContent = "Copiar";
+		btn.addEventListener("click", function() {
+			textarea.select();
+			try {
+				if( document.execCommand("copy") == "unsuccessful" )
+					throw new Error("Error: execComand unsuccessful");
+			} catch(err) {
+				createPopUp("ERROR", "No se pudo copiar. <br />"+ err.toString() );
+			}
+		});
+		popup.appendChild( elt("br") );
+		popup.appendChild(btn);
+		
 	});
 		
 	return div;

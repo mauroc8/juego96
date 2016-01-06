@@ -120,7 +120,7 @@ function Level( sketch ) {
 	this.mirror.star = this.map.addCharacter( stars[1], "⋆" );
 	var level = this;
 	this.player.onCollide = function(char, pos) {
-		if(char=="#" || char=="|" || char=="-") {
+		if( "#|°$◷◴◵◶".indexOf(char) != -1 ) {
 			this.write();
 			return false;
 		} if(char=="%") {
@@ -289,7 +289,7 @@ function drawCanvasTile( cx, char, x, y ) {
 			break;
 		case "%":
 			cx.drawImage( tileset,
-			             scale * Math.floor(Math.random() * 3), scale * 3, scale, scale,
+			             0		  , scale * 3, scale, scale,
 			             x * scale, y * scale, scale, scale );
 			break;
 		case "¬":
@@ -314,6 +314,36 @@ function drawCanvasTile( cx, char, x, y ) {
 			cx.drawImage( tileset,
 			             scale * 3, scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
+			break;
+		case "°": // Roca
+			cx.drawImage( tileset,
+			             scale * 1, scale * 3, scale, scale,
+			             scale * x, scale * y, scale, scale);
+			break;
+		case "$": // Maíz en caja
+			cx.drawImage( tileset,
+			             scale * 2, scale * 3, scale, scale,
+			             scale * x, scale * y, scale, scale);
+			break;
+		case "◴": // Jarrón 1
+			cx.drawImage( tileset,
+			                     0, scale * 4, scale, scale,
+			             scale * x, scale * y, scale, scale);
+			break;
+		case "◵": // Jarrón 2
+			cx.drawImage( tileset,
+			             scale    , scale * 4, scale, scale,
+			             scale * x, scale * y, scale, scale);
+			break;
+		case "◶": // Jarrón 3
+			cx.drawImage( tileset,
+			             scale * 2, scale * 4, scale, scale,
+			             scale * x, scale * y, scale, scale);
+			break;
+		case "◷": // Maíz suelto
+			cx.drawImage( tileset,
+			             scale * 3, scale * 4, scale, scale,
+			             scale * x, scale * y, scale, scale);
 			break;
 		default:
 			cx.fillStyle = "black";
