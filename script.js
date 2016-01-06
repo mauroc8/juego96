@@ -165,7 +165,7 @@ function Game() {
 	this.level = null;
 	
 	var game = this;
-	window.addEventListener("keydown", function(event) {
+	window.onkeydown = function(event) {
 		var code = event.keyCode;
 		if(code==37) {
 			event.preventDefault();
@@ -197,7 +197,7 @@ function Game() {
 			game.level.onStatusChange();
 		}
 		game.refresh();
-	});
+	};
 }
 
 Game.prototype.addLevel = function( sketch ) {
@@ -244,7 +244,7 @@ Game.prototype.refresh = function() {}
 var scale = 32;
 var tileset = document.createElement("img");
 tileset.src = "tiles.png";
-var char_count = [1, 1, 1, 1], wall_count = 0;
+var char_count = [1, 1, 1, 1];
 var onTilesetLoad = function() { }, tilesetLoaded = false;
 tileset.addEventListener("load", function() {
 	tilesetLoaded = true;
@@ -257,10 +257,9 @@ function canvasRenderer(map, cx) {
 	cx.canvas.width = arr[0].length * scale + 2;
 	cx.canvas.height = arr.length * scale + 2;
 	cx.translate(1,1);
-	cx.font = scale + "px monospace";
+	cx.font = scale + "px 'PT mono', monospace";
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
-	wall_count = 0;
 	
 	arr.forEach(function(line, y) {
 		for(var x = 0; x<line.length;x++) {
@@ -279,11 +278,14 @@ function drawCanvasTile( cx, char, x, y ) {
 	var radius = scale/2;
 	switch( char ) {
 		case "#":
+			cx.drawImage( tileset,
+			             scale * 2, scale * 2, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
 		case "|":
 			cx.drawImage( tileset,
-			             scale * ( 1 + wall_count ), scale * 2, scale, scale,
+			             scale * 1, scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
-			wall_count = wall_count == 1 ? 0 : 1;
 			break;
 		case "%":
 			cx.drawImage( tileset,

@@ -5,9 +5,12 @@
 	<title>Editor de mundo de Juego#96</title>
 	<script src="script.js"></script>
 	<link rel="stylesheet" href="estilo.css">
+	<link href='https://fonts.googleapis.com/css?family=PT+Mono' rel='stylesheet' type='text/css'>
 </head>
 <body>
-	<h1>Editor de mundo de Juego#96</h1>
+	<header>
+		<h1>Editor de mundo de Juego#96</h1>
+	</header>
 	<div id="editor"></div>
 <script>
 
@@ -29,22 +32,60 @@ function Editor( parent, tools ) {
 	this.canvas.addEventListener("contextmenu", function(e){e.preventDefault();});
 	
 	this.toolbar = elt("form");
-	for( var tool in tools ) {
-		var radio = elt("input", {type: "radio", name: "tool", id: tool});
-		var label = elt("label", {"for": tool});
-		label.appendChild( tools[tool]( this, radio ) );
-		var toolCont = elt("div", {class: tool + " tool"});
-		toolCont.appendChild( radio );
-		toolCont.appendChild( label );
-		this.toolbar.appendChild( toolCont );
-	}
 	
 	this.cursor = new Cursor(0,0); this.cursorColor = "black";
-	this.selection = null;
+	this.selection = null; this.history = []; this.historyIndex = 0;
 	this.map = new Map(["     ","     ","     ","     ","     "]);
 	
 	parent.appendChild( this.toolbar );
 	parent.appendChild( this.canvas );
+	
+	var editor = this;
+	for( var tool in tools ) (function(tool) {
+		var radio = elt("input", {type: "radio", name: "tool", id: tool});
+		radio.addEventListener("change", function() {
+			removeEvents( editor.canvas );
+			removeEvents( window );
+			editor.refresh();
+			Array.prototype.forEach.call(editor.toolbar.querySelectorAll("div.tool"), function(each) {
+				each.removeAttribute("active");
+			});
+			editor.toolbar.querySelector("div."+tool).setAttribute("active", 1);
+		});
+		var label = elt("label", {"for": tool});
+		label.appendChild( tools[tool]( editor, radio ) );
+		var toolCont = elt("div", {class: tool + " tool"});
+		toolCont.appendChild( radio );
+		toolCont.appendChild( label );
+		
+		
+		editor.toolbar.appendChild( toolCont );
+	})(tool);
+	
+
+	document.body.onkeydown = function(event) {
+		if( event.ctrlKey ) {
+			switch( event.keyCode ) {
+				case 90: // Z
+					event.preventDefault();
+					editor.moveHistory(1);
+				break;
+				case 89: // Y
+					editor.moveHistory(-1);
+				break;
+			}
+		}
+	};
+	
+	editor.refresh( true );
+}
+
+Editor.prototype.moveHistory = function( num ) {
+	if( ! this.history[ this.historyIndex ] ||
+	   !this.history[this.historyIndex + num] ) return false;
+	this.historyIndex += num;
+	this.map = new Map( this.history[ this.historyIndex ].split("\n") );
+	this.refresh();
 }
 
 Editor.prototype.drawMap = function() {
@@ -68,7 +109,20 @@ Editor.prototype.drawSelection = function() {
 	return true;
 }
 
-Editor.prototype.refresh = function() {
+Editor.prototype.refresh = function( history ) {
+	if( history === true ) {
+		if( this.historyIndex > 0 ) {
+			this.history = this.history.slice( this.historyIndex );
+			this.historyIndex = 0;
+		}
+		this.history.unshift( this.map.toString() );
+		if( this.history.length > 50 )
+			this.history.pop();
+	} else if( history === "reset" ) {
+		this.history = [ this.map.toString() ];
+		this.historyIndex = 0;
+	}
+	
 	this.drawMap();
 	if(this.drawSelection() == false)
 		this.drawCursor();
@@ -118,7 +172,7 @@ tools.text = function( editor, radio ) {
 				editor.map.grid.set( editor.cursor, txt[i] );
 				editor.moveCursor( new Cursor(1, 0) );
 			}
-			editor.refresh();
+			editor.refresh(true);
 		}
 	});
 	input.addEventListener("keydown", function( event ) {
@@ -136,14 +190,14 @@ tools.text = function( editor, radio ) {
 				event.preventDefault();
 				editor.moveCursor( new Cursor(-1, 0) );
 				editor.map.grid.set( editor.cursor, " " );
-				editor.refresh();
+				editor.refresh(true);
 				break;
 			case 46: // Supr
 				event.preventDefault();
 				editor.map.grid.set( editor.cursor, " " );
-				editor.refresh();
+				editor.refresh(true);
 				break;
-			case 13:
+			case 13: // Enter
 				event.preventDefault();
 				editor.cursor = cursor_caché
 				editor.moveCursor( new Cursor(0,1) );
@@ -157,10 +211,11 @@ tools.text = function( editor, radio ) {
 	}, false);
 	
 	var div = elt("div");
-	div.textContent = "Texto";
+	var span = elt("span")
+	span.textContent = "Texto";
+	div.appendChild(span);
 	div.appendChild( input );
 	radio.addEventListener("change", function() {
-		removeEvents( editor.canvas );
 		editor.selection = null; editor.refresh();
 		
 		editor.canvas.onclick = function(event) {
@@ -199,8 +254,7 @@ tools.brush = function( editor, radio ) {
 	var brush = " ", mouse = 0;
 		
 	radio.addEventListener("change", function() {
-		removeEvents( editor.canvas );
-		editor.selection = null; editor.refresh();
+		editor.selection = null;
 		
 		editor.canvas.onmousedown = function( event ) {
 			event.preventDefault();
@@ -211,13 +265,12 @@ tools.brush = function( editor, radio ) {
 			event.preventDefault();
 			var curs = getCursorPos( this, event );
 			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
-			handleMouseEvent( event );
+			handleMouseEvent( event )
 			editor.refresh();
 		}
-		editor.canvas.onmouseout = function() {
-			mouse = 0;
-		}
-		editor.canvas.onmouseup = function() {
+		editor.canvas.onmouseout = editor.canvas.onmouseup = function() {
+			if( mouse == 1 || mouse == 3 )
+				editor.refresh(true);
 			mouse = 0;
 		}
 	});
@@ -225,27 +278,30 @@ tools.brush = function( editor, radio ) {
 	function handleMouseEvent( event ) {
 		if(mouse == 1) {
 			editor.map.grid.set( editor.cursor, brush );
-			editor.refresh();
 			return;
 		}
 		if(mouse == 2) {
 			brush = editor.map.grid.get( editor.cursor );
-			return;
+			return false;
 		}
 		if(mouse == 3) {
 			editor.map.grid.set( editor.cursor, " " );
-			editor.refresh();
 			return;
 		}
 	}
 	
 	
 	var modal = createModal("Pinceles");
-	
+	var rect = editor.canvas.getBoundingClientRect();
+	modal.style.top = rect.top + "px";
+	modal.style.left = rect.right + "px";
+
+
 	var dragEdit = new Editor( modal, {} );
+	removeEvents( document.body );
 	dragEdit.map = new Map([
-		" #⋆",
-		" %^"
+		" %^",
+		"#|⋆"
 	]);
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
@@ -268,31 +324,43 @@ tools.brush = function( editor, radio ) {
 
 tools.selection = function( editor, radio ) {
 	var div = elt("div");
-	div.textContent = "Selección";
+
+	var span = elt("span");
+	span.textContent = "Selección";
+	div.appendChild( span );
+
 	var modal = createModal("Funciones");
+	var rect = editor.canvas.getBoundingClientRect();
+	modal.style.top = rect.top + "px";
+	modal.style.left = rect.right + "px";
+
 	modal.id = "selectionOpt";
 	div.appendChild(modal);
 	var options = {
 		"select": {
 			content: "⇲ Seleccionar",
-			title: "Arrastrar el mouse para seleccionar una zona del mapa. También puede hacerse con 'Ctrl'."
+			title: "Arrastrar el mouse para seleccionar una zona del mapa."
 		},
 		"move": {
-			content: "∗ Mover",
-			title: "Arrastrar el mouse para mover la selección. Para copiar, mantener 'Shift'. Mantener 'Ctrl' para crear una nueva selección."
+			content: "∗ Mover <small>(Ctrl)</small>",
+			title: "Arrastrar el mouse para mover la selección. También puede hacerse con 'Ctrl'. "
+		},
+		"copy": {
+			content: "↬ Copiar <small>(Ctrl+Shift)</small>",
+			title: "Arrastrar el mouse para copiar la selección. También puede hacerse con 'Shift'."
 		}
 	};
 	var buttons = {
 		"erase": {
-			content: "↩ Borrar",
+			content: "✁ Borrar (Supr)",
 			title: "Borrar selección. También puede hacerse con 'Supr'.",
 			click: function() {
 				if( editor.selection == null )
 					return editor.map.grid.set( editor.cursor, " " );
 				selectionForEach( editor.selection, function(cursor) {
 					editor.map.grid.set( cursor, " ");
-					editor.refresh();
 				});
+				editor.refresh( true );
 			}
 		},
 		"invertX": {
@@ -319,7 +387,7 @@ tools.selection = function( editor, radio ) {
 					editor.map.grid.set( cursor, str[i] );
 					i++;
 				});
-				editor.refresh();
+				editor.refresh( true );
 			}
 		},
 		"invertY":{
@@ -342,7 +410,7 @@ tools.selection = function( editor, radio ) {
 					editor.map.grid.set( cursor, str[i] );
 					i++;
 				});
-				editor.refresh();
+				editor.refresh( true );
 			}
 		}	
 	}
@@ -385,20 +453,11 @@ tools.selection = function( editor, radio ) {
 	
 	var mouse = 0, tool = "select";
 	var oldSelection, relativePosFromSelection;
-	radio.addEventListener("change", function() {
-		removeEvents( editor.canvas );
-				
+	radio.addEventListener("change", function() {				
 		editor.canvas.onmousedown = function(event) {
 			mouse = event.which;
 			if( mouse == 1 ) {
-				if( ctrlKey || tool == "select" ) {
-					
-					var curs = getCursorPos( this, event );
-					if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
-					
-					editor.selection = [editor.cursor, editor.cursor];
-					editor.refresh();
-				} else if( tool == "move" ) {
+				if( event.ctrlKey || tool == "move" || tool == "copy" ) {
 					var i = 0, current;
 					
 					var curs = getCursorPos( this, event );
@@ -407,7 +466,13 @@ tools.selection = function( editor, radio ) {
 					if( editor.selection == null )
 						editor.selection = [ relativePosFromSelection, relativePosFromSelection ];
 					oldSelection = editor.selection.slice(0);
-				}
+				} else if( tool == "select" ) {
+					var curs = getCursorPos( this, event );
+					if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
+					
+					editor.selection = [editor.cursor, editor.cursor];
+					editor.refresh();
+				} 
 			}
 		}
 		editor.canvas.onmousemove = function(event) {
@@ -417,16 +482,16 @@ tools.selection = function( editor, radio ) {
 			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
 
 			if( mouse == 1 ) {
-				if( ctrlKey || tool == "select" ) {
-					if(editor.selection != null)
-						editor.selection[1] = editor.cursor;
-				} else if( tool == "move" ) {
+				if( event.ctrlKey || tool == "move" || tool=="copy" ) {
 					var current_pos = getCursorPos( this, event );
 					var change = relativePosFromSelection.minus( current_pos );
 					relativePosFromSelection = current_pos;
 					editor.selection = editor.selection.map(function(curs) {
 						return curs.minus( change );
 					});
+				} else if( tool == "select" ) {
+					if(editor.selection != null)
+						editor.selection[1] = editor.cursor;
 				}
 				editor.refresh();
 			}
@@ -434,45 +499,36 @@ tools.selection = function( editor, radio ) {
 		editor.canvas.onmouseout = editor.canvas.onmouseup = function(event) {
 			event.preventDefault();
 			if( mouse == 1 ) {
-				if( tool == "move" && !ctrlKey ) {
+				if( tool == "move" || tool == "copy" || event.ctrlKey ) {
 					var i = 0;
 					var selectedText = "";
-					selectionForEach( oldSelection, function(cursor) {
-						selectedText += editor.map.grid.get(cursor) || " ";
-						if( !shiftKey ) editor.map.grid.set(cursor, " ");
-					});
-					selectionForEach( editor.selection, function(cursor) {
-						if(selectedText[i] == " ") return i++;
-						editor.map.grid.set( cursor, selectedText[i] );
-						i++;
-					});
+					if( event.shiftKey || tool == "copy" ) {
+						selectionForEach( oldSelection, function(cursor) {
+							selectedText += editor.map.grid.get(cursor) || " ";
+						});
+						selectionForEach( editor.selection, function(cursor) {
+							if( selectedText[i] == " " ) return i++;
+							editor.map.grid.set( cursor, selectedText[i] );
+							i++;
+						});
+					} else {
+						selectionForEach( oldSelection, function(cursor) {
+							selectedText += editor.map.grid.get(cursor) || " ";
+							editor.map.grid.set(cursor, " ");
+						});
+						selectionForEach( editor.selection, function(cursor) {
+							editor.map.grid.set( cursor, selectedText[i] );
+							i++;
+						});
+					}
+					editor.refresh( true );
+				} else if( tool == "select" ) {
+					editor.refresh();
 				}
 				if( editor.selection != null && editor.selection[0].isEqualTo( editor.selection[1] ) )
 					editor.selection = null;
-				editor.refresh();
 			}
 			mouse = 0;
-		}
-		var ctrlKey, shiftKey;
-		editor.canvas.onkeydown = function(event) {
-			var code = event.keyCode;
-			switch( code ) {
-				case 17:
-				ctrlKey = true;
-				break;
-				case 16:
-				shiftKey = true;
-				break;
-				case 27: // Esc
-				modal.querySelector("#select").checked = true;
-				break;
-				case 46: // Supr
-				modal.querySelector("#erase").click();
-				break;
-			}
-		};
-		editor.canvas.onkeyup = function() {
-			ctrlKey = shiftKey = false;
 		}
 	});
 	
@@ -495,26 +551,25 @@ tools.selection = function( editor, radio ) {
 function createModal(title) {
 	var opt = elt("div", {class: "options"});
 	
-	var drag = elt("div", {class: "drag"});
+	var drag = elt("div", {class: "drag", "tabIndex": 2});
 	drag.textContent = title;
 	var drag_mouse = 0, drag_pos;
 	drag.addEventListener("mousedown", function(event) {
-		event.preventDefault();
 		var rect = opt.getBoundingClientRect();
 		drag_pos = {x: event.clientX - rect.left,
 						y: event.clientY - rect.top};
 		drag_mouse = event.which;
 	});
 	window.addEventListener("mousemove", function(event) {
-		event.preventDefault();
 		if(drag_mouse == 1) {
+			event.preventDefault();
 			opt.style.left = event.clientX - drag_pos.x + "px";
 			opt.style.top = event.clientY - drag_pos.y + "px";
 		}
 	});
-	drag.addEventListener("mouseup", function(event) {
-		event.preventDefault();
-		drag_mouse = 0;
+	window.addEventListener("mouseup", function(event) {
+		if( drag_mouse == 1 ) 
+			drag_mouse = 0;
 	});
 	opt.appendChild( drag );
 	return opt;
@@ -522,8 +577,14 @@ function createModal(title) {
 
 tools.changeSize = function( editor, radio ) {
 	var div = elt("div");
-	div.textContent = "Ajustar tamaño";
+	var span = elt("span");
+	span.textContent = "Cambiar tamaño";
+	
+	div.appendChild( span );
 	var opt = createModal("Tamaño");
+	var rect = editor.canvas.getBoundingClientRect();
+	opt.style.top = rect.top + "px";
+	opt.style.left = rect.right + "px";
 	var TVControllers = elt("div", {class: "TVControllers"});
 	var directions = ["up", "down", "left", "right"];
 	directions.forEach(function(direction) {
@@ -555,43 +616,180 @@ tools.changeSize = function( editor, radio ) {
 				break;
 			}
 			editor.map = new Map(sketch);
-			editor.refresh();
+			editor.refresh(true);
 			
 		};
 	});
 	
 	opt.appendChild( TVControllers );
 	
-	radio.addEventListener("change", function() {
-		removeEvents( editor.canvas );
-	});
-	
 	div.appendChild( opt );
 	return div;
 }
 
+
+tools.maps = function( editor, radio ) {
+	var span = elt("span");
+	span.textContent = "Gestión de mapas";
+	var div = elt("div");
+	div.appendChild(span);
+	
+	var modal = createModal("Mapas");
+	var rect = editor.canvas.getBoundingClientRect();
+	modal.style.top = rect.top + "px";
+	modal.style.left = rect.right + "px";
+
+	div.appendChild( modal );
+	var buttonCont = elt("div", {id: "maptools"});
+	modal.appendChild( buttonCont );
+	
+	var search = elt("input", {type: "text"});
+	var list = elt("ul");
+	var save = elt("button", {type: "button"}); save.textContent = "Guardar";
+	var open = elt("button", {type: "button"}); open.textContent = "Abrir";
+	var erase = elt("button", {type: "button"}); erase.textContent = "Borrar";
+	var hr = elt("hr");
+	var imp = elt("button", {type: "button"}); imp.textContent = "Importar";
+	var exp = elt("button", {type: "button"}); exp.textContent = "Exportar";
+	addChilds( buttonCont, search, list, save, open, erase, hr, imp, exp );
+	
+	
+	function ACTUALIZAR() {
+		list.textContent = "";
+		var maps = JSON.parse(localStorage.getItem("mapList"));
+		maps.forEach(function(name) {
+			if( name.indexOf(search.value) == 0 ) {
+				var li  = elt("li");
+				li.textContent = name;
+				li.onclick = function() {
+					Array.prototype.forEach.call(list.children, function(child) {
+						child.className = "";
+					});
+					this.className = "active";
+					search.value = this.textContent;
+				}
+				list.appendChild(li);
+			}
+		});
+		var first = list.querySelector("li")
+		if(!first) {
+			list.innerHTML = "<small style='opacity:.5;font-style:italic'>No se encontró ningún mapa.</small>";
+		}
+	}
+	
+	search.addEventListener("input", ACTUALIZAR);
+	ACTUALIZAR();
+	
+	save.addEventListener("click", function() {
+		var nombre = search.value;
+		if( !nombre ) {
+			var selected = list.querySelector(".active");
+			if( selected ) 
+				nombre = selected.textContent;
+			else
+				return createPopUp("ERROR", "Tenés que ingresar<br />un nombre para guardar.");
+		}
+		var maps = JSON.parse(localStorage.getItem("mapList"));
+		if( maps.indexOf(nombre) != -1 )
+			maps.splice( maps.indexOf(nombre), 1 );
+		maps.unshift( nombre );
+		localStorage.setItem( "mapList", JSON.stringify(maps) );
+		localStorage.setItem( "map"+ nombre, JSON.stringify( editor.map.toString().split("\n") ) ); 
+		createPopUp("Info", "El mapa se guardó correctamente.");
+		search.value = "";
+		ACTUALIZAR();
+		list.querySelector("li").className = "active";
+	});
+	open.addEventListener("click", function() {
+		var selected = list.querySelector(".active");
+		if( selected == null ) return createPopUp("ERROR", "Tenés que seleccionar<br />un mapa para abrir.");
+		var map = JSON.parse( localStorage.getItem( "map"+ selected.textContent ) );
+		if( !map ) return createPopUp("ERROR", "Al parecer el mapa que querés<br />abrir no existe.");
+		editor.map = new Map( map );
+		editor.refresh( "reset" );
+		search.value = "";
+		var nombre = selected.textContent;
+		var maps = JSON.parse(localStorage.getItem("mapList"));
+		if( maps.indexOf(nombre) != -1 )
+			maps.splice( maps.indexOf(nombre), 1 );
+		maps.unshift( nombre );
+		localStorage.setItem( "mapList", JSON.stringify(maps) );
+
+		ACTUALIZAR();
+		list.querySelector("li").className = "active";
+	});
+	erase.addEventListener("click", function() {
+		var selected = list.querySelector(".active");
+		if( selected == null ) return createPopUp("ERROR", "Tenés que seleccionar<br />un mapa para borrar.");
+		
+		var maps = JSON.parse(localStorage.getItem("mapList"));
+		maps.splice( maps.indexOf( selected.textContent ), 1 );
+		localStorage.setItem( "mapList", JSON.stringify(maps) );
+
+		localStorage.removeItem( "map" + selected.textContent );
+		createPopUp("Info", "El mapa se borró correctamente");
+		search.value = "";
+		ACTUALIZAR();
+	});
+	
+	imp.addEventListener("click", function() {
+		var popup = createPopUp("Importar",
+			"<p>Ingresar el mapa en formato<br />JSON (array de strings)</p>"+
+			"<textarea></textarea>");
+		var btn = elt("button", {type: "button"}); btn.textContent = "Importar";
+		popup.appendChild(btn);
+		btn.onclick = function() {
+			try {
+				var textarea = popup.querySelector("textarea");
+				if( !textarea.value ) throw new Error("¡No ingresaste nada!");
+				console.log( textarea.value );
+				var arr = JSON.parse(textarea.value);
+				if( typeof arr != "object" ) throw new SyntaxError("Formato inválido.<br />"+
+				                                                  'Ingresar como array en formato JSON.<br />'+
+				                                                  'Ej.: ["   ", "   ", "   "];');
+				editor.map = new Map(arr);
+				editor.refresh( "reset" );
+				popup.querySelector(".popUpClose").click();
+			} catch(e) {
+				return createPopUp("ERROR", e.toString() );
+			}
+		}
+	});
+	exp.addEventListener("click", function() {
+		var popup = createPopUp("Exportar",
+			"<p>Tu mapa:</p><hr />");
+		var pre = elt("textarea", {class: "mapExport"});
+		var arr = editor.map.toString().split("\n");
+		pre.value = JSON.stringify( arr ).replace(/"\,"/g, '",\n"');
+		popup.appendChild(pre);
+	});
+		
+	return div;
+}
+
+function addChilds( parent ) {
+	for( var i = 1; i < arguments.length; i++ ) {
+		var child = arguments[i];
+		if( typeof child == "string" )
+			child = document.createTextNode( child );
+		parent.appendChild( child );
+	}
+}
+
 tools.test = function( editor, radio ) {
 	var div = elt("div")
-	div.textContent = "Jugar";
-	var modal = createModal("Info");
-	modal.id = "testInfo";
-	var info = elt("pre");
-	modal.appendChild(info);
-	div.appendChild(modal);
+	var span = elt("span");
+	span.textContent = "Probar mapa";
+	div.appendChild( span );
+
 	
 	radio.addEventListener("change", function() {
-		removeEvents( editor.canvas );
-		info.textContent = "";
-		
 		if( editor.map.grid.look("^").length == 2 && editor.map.grid.look("⋆").length == 2 ) {
 			var map = editor.map.toString().split("\n");
 			var game = new Game();
 			game.addLevel(map);
 			game.loadLevel();
-			info.textContent = "☑ Mapa cargado exitosamente:\n[\""+ map.join('",\n"') + "\"]\n"
-								+ info.textContent;
 			game.level.onStatusChange = function status() {
-				info.textContent = "☑ Nivel finalizado.\n" + info.textContent;
 				setTimeout(function() {
 					game.loadLevel();
 					game.level.onStatusChange = status;
@@ -602,15 +800,49 @@ tools.test = function( editor, radio ) {
 			}
 			game.refresh();
 		} else {
-			info.textContent = "☒ ERROR: Tiene que haber 2 personajes y 2 estrellas para poder jugar.";
+			createPopUp("ERROR",
+			            "<p>Antes de probar el mapa, tené en cuenta lo siguiente:</p><hr />"+
+			            "<pre>"+
+			            	"&gt; Tiene que haber dos (2) personajes y dos\n"+
+			            	"(2) estrellas para poder jugar.\n\n"+
+			            	"&gt; El personaje principal siempre va a ser\n"+
+			            	"el que esté en el lado izquierdo del mapa.\n\n"+
+			            	"&gt; A cada personaje le corresponde sólamente\n"+
+			            	"una estrella.\n\n"+
+			            	"&gt; Al personaje de la izquierda le correspon-\n"+
+			            	"de la estrella de la izquierda."+
+			            "</pre>" );
 		}
 	});
 	
 	return div;
 }
 
+function createPopUp(title, html) {
+	var old = document.body.querySelector(".popUp");
+	if( old ) document.body.removeChild(old);
+	
+	var node = createModal( title );
+	node.className = "options popUp";
+	
+	
+	var content = elt("div", {class: "popUpContent"});
+	content.innerHTML = html;
+	node.appendChild( content );
+	
+	var close = elt("span", {class: "popUpClose"});
+	close.textContent = "x";
+	close.onclick = function() {
+		document.body.removeChild( node );
+	}
+	
+	node.querySelector(".drag").appendChild(close);
+	
+	document.body.appendChild( node );
+	return node;
+}
+
 var editor = new Editor( document.querySelector("#editor"), tools );
-editor.refresh();
 
 </script>
 </body>
