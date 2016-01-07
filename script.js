@@ -110,8 +110,8 @@ function Level( sketch ) {
 	if( stars[0].x > stars[1].x) {
 		stars.push( stars.shift() );
 	}
-	this.player = this.map.addCharacter( this.map.grid.look("^"), "^" );
-	this.mirror = this.map.addCharacter( this.map.grid.look("`"), "`" );
+	this.player = this.map.addCharacter( this.map.grid.look("^")[0], "^" );
+	this.mirror = this.map.addCharacter( this.map.grid.look("`")[0], "`" );
 	this.player.star = this.map.addCharacter( stars[0], "⋆" );
 	this.mirror.star = this.map.addCharacter( stars[1], "⋆" );
 	var level = this;
@@ -203,7 +203,7 @@ Game.prototype.loadLevel = function() {
 	if( !this.levelSketches[this.currentLevel] )
 		this.level = new Level([
 			"                       ",
-			"  ⋆                 ^  ",
+			"  ⋆                 `  ",
 			"                       ",
 			"  ¡Ganaste!            ",
 			"      Juego hecho por  ",
@@ -304,10 +304,16 @@ function drawCanvasTile( cx, char, x, y ) {
 			break;
 		case "&":
 			cx.drawImage( tileset,
-			             scale*6, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5 );
+			             scale*6, 0, scale*1.5, scale*2,
+			             x * scale, y * scale, scale*1.5, scale*2 );
+			break;
+		case "<":
+			cx.drawImage( tileset,
+			             scale*15, 0, scale*1.5, scale*2,
+			             x * scale, y * scale, scale*1.5, scale*2 );
 			break;
 		
+		// otros
 		case "^":
 			cx.drawImage( tileset,
 			             scale*8, 0, scale, scale,

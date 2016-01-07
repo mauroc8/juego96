@@ -33,7 +33,7 @@ function Editor( parent, tools ) {
 	
 	this.toolbar = elt("form");
 	
-	this.cursor = new Cursor(0,0); this.cursorColor = "black";
+	this.cursor = new Cursor(0,0); this.cursorColor = "blue";;
 	this.selection = null; this.history = []; this.historyIndex = 0;
 	try {
 		var maps = JSON.parse( localStorage.getItem("mapList") );
@@ -98,8 +98,9 @@ Editor.prototype.drawMap = function() {
 }
 
 Editor.prototype.drawCursor = function() {
+	this.cx.lineWidth = 2;
 	this.cx.strokeStyle = this.cursorColor;
-	this.cx.strokeRect( this.cursor.x * scale, this.cursor.y * scale, scale, scale );
+	this.cx.strokeRect( this.cursor.x * scale-.5, this.cursor.y * scale-.5, scale+1, scale+1 );
 }
 
 Editor.prototype.drawSelection = function() {
@@ -108,9 +109,10 @@ Editor.prototype.drawSelection = function() {
 	var height = Math.abs( this.selection[1].y - this.selection[0].y ) + 1;
 	var selection_start = new Cursor(Math.min( this.selection[0].x, this.selection[1].x ),
 	                                 Math.min( this.selection[0].y, this.selection[1].y ));
+	this.cx.lineWidth = 2;
 	this.cx.strokeStyle = this.cursorColor;
-	this.cx.strokeRect( selection_start.x * scale, selection_start.y * scale,
-	                   width * scale,               height * scale);
+	this.cx.strokeRect( selection_start.x * scale-.5, selection_start.y * scale-.5,
+	                   width * scale+1,               height * scale+1);
 	return true;
 }
 
@@ -303,7 +305,7 @@ tools.brush = function( editor, radio ) {
 	removeEvents( document.body );
 	dragEdit.map = new Map([
 		"           ",
-		" # | ° ¬ & ",
+		" # |°¬ & < ",
 		"           ",
 		" ^`⋆   %-  ",
 		"           "
