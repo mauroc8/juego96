@@ -39,13 +39,14 @@ header>h1{
   padding: 8px;
   border-radius: 5px;
   transition: background-color .4s ease-in-out;
-  margin: 6px 0; margin-right: 5px;
-  cursor: pointer;
+  margin: 6px 0;
+  margin-right: 5px;
+  position: relative;
 }
 
 #editor > form, .tool{
    border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+   border-bottom-left-radius: 0;
 }
 
 .tool:hover, .tool[active]{
@@ -53,52 +54,67 @@ header>h1{
 }
 
 .tool > label{
+  width: 42px;
+  height: 42px;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.tool > label:after{
   width: 32px;
   height: 32px;
   background-image: url(iconsheet.png);
   display: inline-block;
   cursor: pointer;
+  content: '';
 }
-.tool:nth-of-type(1) > label {
+
+
+.tool:nth-of-type(1) > label:after {
   background-position: -0px 0;
 }
 
-.tool:nth-of-type(2) > label {
+.tool:nth-of-type(2) > label:after {
   background-position: -32px 0;
 }
 
-.tool:nth-of-type(3) > label {
+.tool:nth-of-type(3) > label:after {
   background-position: -64px 0;
 }
 
-.tool:nth-of-type(4) > label {
+.tool:nth-of-type(4) > label:after {
   background-position: -96px 0;
 }
 
-.tool:nth-of-type(5) > label {
+.tool:nth-of-type(5) > label:after {
   background-position: -128px 0;
 }
 
-.tool:nth-of-type(6) > label {
+.tool:nth-of-type(6) > label:after {
   background-position: -160px 0;
 }
 
 .tool > label > div > span{
-  opacity: 0; visibility: hidden;
-  transition: opacity .4s ease-in-out, visibility .4s ease-in-out;
-  position: absolute;
-  left: 48px;
+  font: 16px sans-serif;
+  position: fixed;
   white-space: nowrap;
-  background-color: rgba(0,0,0,.5);
+  display: block;
+  bottom: 0;
+  top: auto;
+  left: 0;
+  padding: .51em;
+  background-color: rgba(0,0,0,.71);
+  border-top-right-radius: 5px;
   color: white;
-  padding: .2em;
-  border-radius: 5px;
-  font-size: 16px;
-  line-height: 1.5;
-  font-family: sans-serif;
+  visibility: hidden; opacity: 0;
+  transition: visibility .3s ease-in-out, opacity .3s ease-in-out;
 }
-.tool > label:hover > div > span{
-  opacity: 1; visibility: visible;
+.tool > label:hover > div > span {
+  visibility: visible; opacity: 1;  
 }
 
 .tool>[type="radio"]{

@@ -106,26 +106,22 @@ Map.prototype.addCharacter = function(cursor, char) {
 function Level( sketch ) {
 	this.sketch = sketch;
 	this.map = new Map(sketch);
-	var players = this.map.grid.look("^");
 	var stars = this.map.grid.look("⋆");
-	if( players[0].x > players[1].x) {
-		players.push( players.shift() );
-	}
 	if( stars[0].x > stars[1].x) {
 		stars.push( stars.shift() );
 	}
-	this.player = this.map.addCharacter( players[0], "↑" );
-	this.mirror = this.map.addCharacter( players[1], "↓" );
+	this.player = this.map.addCharacter( this.map.grid.look("^"), "^" );
+	this.mirror = this.map.addCharacter( this.map.grid.look("`"), "`" );
 	this.player.star = this.map.addCharacter( stars[0], "⋆" );
 	this.mirror.star = this.map.addCharacter( stars[1], "⋆" );
 	var level = this;
 	this.player.onCollide = function(char, pos) {
-		if( "#|°$◷◴◵◶".indexOf(char) != -1 ) {
+		if( "#|°¬&".indexOf(char) != -1 ) {
 			this.write();
 			return false;
-		} if(char=="%") {
+		} if(char=="%"||char=="-") {
 			this.freeze = true;
-			this.char = "¬";
+			this.char = getDeadChar(this.char, char);
 			level.status = -1;
 			level.onStatusChange();
 		}
@@ -143,6 +139,10 @@ function Level( sketch ) {
 	this.mirror.onMove = this.player.onMove;
 
 	this.status = 0;
+}
+
+function getDeadChar(player, lavaType) {
+	return "%";
 }
 
 Level.prototype.pause = function() {
@@ -169,22 +169,18 @@ function Game() {
 		var code = event.keyCode;
 		if(code==37) {
 			event.preventDefault();
-			game.level.player.char = "←"; game.level.mirror.char = "→";
 			game.level.player.move(new Cursor(-1,0));
 			game.level.mirror.move(new Cursor(1,0));
 		} else if(code==38) {
 			event.preventDefault();
-			game.level.player.char = "↑"; game.level.mirror.char = "↓";
 			game.level.player.move(new Cursor(0,-1));
 			game.level.mirror.move(new Cursor(0,1));
 		} else if(code==39) {
 			event.preventDefault();
-			game.level.player.char = "→"; game.level.mirror.char = "←";
 			game.level.player.move(new Cursor(1,0));
 			game.level.mirror.move(new Cursor(-1,0));
 		} else if(code==40) {
 			event.preventDefault();
-			game.level.player.char = "↓"; game.level.mirror.char = "↑";
 			game.level.player.move(new Cursor(0,1));
 			game.level.mirror.move(new Cursor(0,-1));
 		} else if(code==82) { // R: restart
@@ -242,8 +238,8 @@ Game.prototype.refresh = function() {}
 //////////////////////////////////////////////////////////////////////////////////////////
 
 var scale = 32;
-var tileset = document.createElement("img");
-tileset.src = "tiles.png";
+var tileset = new Image();
+tileset.src = "chess-tiles.png";
 var char_count = [1, 1, 1, 1];
 var onTilesetLoad = function() { }, tilesetLoaded = false;
 tileset.addEventListener("load", function() {
@@ -251,6 +247,7 @@ tileset.addEventListener("load", function() {
 	onTilesetLoad();
 });
 
+var lava_loop = 0;
 function canvasRenderer(map, cx) {
 	var str = map.toString();
 	var arr = str.split("\n");
@@ -260,13 +257,20 @@ function canvasRenderer(map, cx) {
 	cx.font = scale + "px 'PT mono', monospace";
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
+	lava_loop = (lava_loop + 1) % 4;
+	
+	for( var y = 0; y < arr.length ; y ++ ) {
+		for( var x = 0; x < arr[y].length; x++ ) {
+			//fondo
+			if( (x + y) % 2 == 0 )
+				cx.fillStyle = "#bfbfbf";
+			else cx.fillStyle = "#1e1e1e";
+			cx.fillRect(x*scale,y*scale,scale,scale);
+		}
+	}
 	
 	arr.forEach(function(line, y) {
 		for(var x = 0; x<line.length;x++) {
-			//fondo
-			cx.drawImage( tileset,
-			             0,         scale * 2, scale, scale,
-			             x * scale, y * scale, scale, scale);
 			//caracter
 			if( line[x] != " " )
 				drawCanvasTile( cx, line[x], x, y );
@@ -277,73 +281,59 @@ function canvasRenderer(map, cx) {
 function drawCanvasTile( cx, char, x, y ) {
 	var radius = scale/2;
 	switch( char ) {
+		// PAREDES
 		case "#":
 			cx.drawImage( tileset,
-			             scale * 2, scale * 2, scale, scale,
-			             x * scale, y * scale, scale, scale);
+			             0, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5 );
 			break;
 		case "|":
 			cx.drawImage( tileset,
-			             scale * 1, scale * 2, scale, scale,
-			             x * scale, y * scale, scale, scale);
+			             scale*1.5, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5 );
 			break;
-		case "%":
+		case "°":
 			cx.drawImage( tileset,
-			             0		  , scale * 3, scale, scale,
-			             x * scale, y * scale, scale, scale );
+			             scale*3, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5 );
 			break;
 		case "¬":
 			cx.drawImage( tileset,
-			             scale * 3, scale * 3, scale, scale,
-			             x* scale, y*scale, scale, scale );
+			             scale*4.5, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5 );
 			break;
-		case "↓":
+		case "&":
+			cx.drawImage( tileset,
+			             scale*6, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5 );
+			break;
+		
 		case "^":
-			drawChar( cx, 0, x, y );
+			cx.drawImage( tileset,
+			             scale*8, 0, scale, scale,
+			             x * scale, y * scale, scale, scale );
 			break;
-		case "←":
-			drawChar( cx, 1, x, y );
+		case "`":
+			cx.drawImage( tileset,
+			             scale*8, scale, scale, scale,
+			             x * scale, y * scale, scale, scale );
 			break;
-		case "→":
-			drawChar( cx, 2, x, y );
+		
+		case "%":
+			cx.drawImage( tileset,
+			             scale*(9 + lava_loop), scale, scale, scale,
+			             x * scale, y * scale, scale, scale );
 			break;
-		case "↑":
-			drawChar( cx, 3, x, y );
+		case "-":
+			cx.drawImage( tileset,
+			             scale*(9 + lava_loop%2 ), 0, scale, scale,
+			             x * scale, y * scale, scale, scale );
 			break;
+		
 		case "⋆":
 			cx.drawImage( tileset,
-			             scale * 3, scale * 2, scale, scale,
+			             scale * 11, 0, scale, scale,
 			             x * scale, y * scale, scale, scale);
-			break;
-		case "°": // Roca
-			cx.drawImage( tileset,
-			             scale * 1, scale * 3, scale, scale,
-			             scale * x, scale * y, scale, scale);
-			break;
-		case "$": // Maíz en caja
-			cx.drawImage( tileset,
-			             scale * 2, scale * 3, scale, scale,
-			             scale * x, scale * y, scale, scale);
-			break;
-		case "◴": // Jarrón 1
-			cx.drawImage( tileset,
-			                     0, scale * 4, scale, scale,
-			             scale * x, scale * y, scale, scale);
-			break;
-		case "◵": // Jarrón 2
-			cx.drawImage( tileset,
-			             scale    , scale * 4, scale, scale,
-			             scale * x, scale * y, scale, scale);
-			break;
-		case "◶": // Jarrón 3
-			cx.drawImage( tileset,
-			             scale * 2, scale * 4, scale, scale,
-			             scale * x, scale * y, scale, scale);
-			break;
-		case "◷": // Maíz suelto
-			cx.drawImage( tileset,
-			             scale * 3, scale * 4, scale, scale,
-			             scale * x, scale * y, scale, scale);
 			break;
 		default:
 			cx.fillStyle = "black";
@@ -352,12 +342,4 @@ function drawCanvasTile( cx, char, x, y ) {
 			cx.fillText(char, x*scale+radius, y*scale+radius);
 			break;
 	}
-}
-
-function drawChar( cx, index, x, y ) {
-	cx.drawImage( tileset,
-	             scale * index, scale * char_count[index], scale, scale,
-	             x * scale, y * scale, scale, scale );
-	char_count[index] = char_count[index] == 0 ? 1 : 0;
-	cx.fillStyle = "transparent";
 }

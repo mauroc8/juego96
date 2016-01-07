@@ -302,11 +302,12 @@ tools.brush = function( editor, radio ) {
 	var dragEdit = new Editor( modal, {} );
 	removeEvents( document.body );
 	dragEdit.map = new Map([
-		" %^",
-		"#|⋆",
-		"°$◷",
-		"◴◵◶"
-	]);
+		"           ",
+		" # | ° ¬ & ",
+		"           ",
+		" ^`⋆   %-  ",
+		"           "
+	]); // TILES
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
 		event.preventDefault();
@@ -812,7 +813,9 @@ tools.test = function( editor, radio ) {
 
 	
 	radio.addEventListener("change", function() {
-		if( editor.map.grid.look("^").length == 2 && editor.map.grid.look("⋆").length == 2 ) {
+		if(editor.map.grid.look("^").length == 1 &&
+		   editor.map.grid.look("`").length == 1 &&
+		   editor.map.grid.look("⋆").length == 2 ) {
 			var map = editor.map.toString().split("\n");
 			var game = new Game();
 			game.addLevel(map);
