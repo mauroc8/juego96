@@ -115,8 +115,8 @@ function Level( sketch ) {
 	
 	var switches = [{
 		"key": "▪",
-		"door-locked": "■▶◀▮",
-		"door-unlocked": "▬►◄◆"
+		"door-locked": "■▶◀▮ᐁᐂᐃ",
+		"door-unlocked": "▬►◄◆▬►ᐡ"
 	},{
 		"key": "▫",
 		"door-locked": "□",
@@ -148,7 +148,8 @@ function Level( sketch ) {
 	
 	var level = this;
 	this.player.onCollide = function(char, pos) {
-		if( "#|°¬&■▶◀▮".indexOf(char) != -1 ) {
+		// COLISIONES:
+		if( "#|°¬&■▶◀▮ᐁᐂᐃ".indexOf(char) != -1 ) {
 			this.write();
 			return false;
 		} if("%-{}[]".indexOf(char) != -1) {
@@ -346,16 +347,16 @@ var reservedChars = {
 		height: 2
 	},
 	/*
-	/*   OTROS    */
+	/*   OTROS (personajes, lava, estrella)   */
 	'^':{
 		positionX: 8,
-		positionY: 1,
+		positionY: 0,
 		width: 1,
 		height: 1
 	},
 	'`':{
 		positionX: 8,
-		positionY: 0,
+		positionY: 1,
 		width: 1,
 		height: 1
 	},
@@ -378,7 +379,7 @@ var reservedChars = {
 		height: 1
 	},
 	/*
-	/*   PERSONAJES (y pers. muertos)    */
+	/*   PERSONAJES (muertos)    */
 	'[':{
 		positionX: 13,
 		positionY: 0,

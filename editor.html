@@ -87,7 +87,7 @@ function Editor( parent, tools ) {
 	Array.prototype.forEach.call(modals, function(modal) {
 		var rect = this.canvas.getBoundingClientRect();
 		modal.style.left = rect.right + "px";
-		modal.style.top = rect.top + "px";
+		modal.style.top = "64px";
 	}, this);
 }
 
@@ -312,14 +312,12 @@ tools.brush = function( editor, radio ) {
 
 	var dragEdit = new Editor( modal, {} );
 	removeEvents( document.body );
-	dragEdit.map = new Map([
-		"^`-%",
-		"⋆&<¬",
-		"|°¬ ",
-		"  ■▶",
-		"#◀▮▪",
-		" ᐁᐂ "
-	]); // TILES
+	dragEdit.map = new Map(["`^|°¬ ",
+"⋆ ■ᐁ  ",
+"▪▶-<¬ ",
+" ᐂ%&  ",
+" ᐃ #◀▮",
+"      "]); // TILES
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
 		event.preventDefault();
