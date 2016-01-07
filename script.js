@@ -233,6 +233,7 @@ Level.prototype.turn = function() {
 
 function Game() {
 	this.levelSketches = [];
+	this.levelNames = [];
 	this.currentLevel = 0; // current level number
 	this.level = null;
 	
@@ -269,13 +270,16 @@ function Game() {
 	};
 }
 
-Game.prototype.addLevel = function( sketch ) {
+Game.prototype.addLevel = function( sketch, name ) {
 	this.levelSketches.push( sketch );
+	if ( name ) this.levelNames.push( name );
+	else this.levelNames.push('Un nivel de Juego 96');
 }
 Game.prototype.loadLevel = function() {
 	if( !this.levelSketches[this.currentLevel] )
 		this.currentLevel--;
 	this.level = new Level( this.levelSketches[ this.currentLevel ] );
+
 	this.refresh();
 
 	var game = this;
@@ -283,6 +287,8 @@ Game.prototype.loadLevel = function() {
 		if( this.status === 1 ) {
 			this.pause();
 			game.currentLevel++;
+			// Pasar de nivel (Buen Trabajo!)
+			console.log( game.levelNames[ game.currentLevel ]);
 		}
 
 		setTimeout(function() {
