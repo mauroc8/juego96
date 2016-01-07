@@ -81,11 +81,9 @@ Character.prototype.move = function( cursor ) {
 		this.erase();
 		this.cursor = newCurs;
 		this.write();
-		this.onMove( newCurs );
 	}
 }
 Character.prototype.onCollide = function() { return true; };
-Character.prototype.onMove = function() {};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 function Map( sketch ) {
@@ -114,9 +112,43 @@ function Level( sketch ) {
 	this.mirror = this.map.addCharacter( this.map.grid.look("`")[0], "`" );
 	this.player.star = this.map.addCharacter( stars[0], "⋆" );
 	this.mirror.star = this.map.addCharacter( stars[1], "⋆" );
+	
+	var switches = [{
+		"key": "▪",
+		"door-locked": "■▶◀▮",
+		"door-unlocked": "▬►◄◆"
+	},{
+		"key": "▫",
+		"door-locked": "□",
+		"door-unlocked": "▭"
+	}];
+
+	
+	this.switches = [];
+	
+	// FILTRAR LA VARIABLE SWITCHES.
+	switches.forEach(function(swch) {
+		var arr = this.map.grid.look(swch.key);
+		if( arr ) {
+			swch.keyObjects = arr.map(function(cursor) {
+				return this.map.addCharacter(cursor, swch.key);
+			}, this);
+			var doorObjects = [], doors = swch["door-locked"];
+			for( var i = 0; i < doors.length; i++) {
+				doorObjects = doorObjects.concat( this.map.grid.look(doors[i]).map(function(cursor) {
+					var ret = this.map.addCharacter(cursor, swch["door-locked"][i]);
+					ret.INDEX = i;
+					return ret;
+				}, this) );
+			}
+			swch.doorObjects = doorObjects;
+			this.switches.push(swch);
+		}
+	}, this);
+	
 	var level = this;
 	this.player.onCollide = function(char, pos) {
-		if( "#|°¬&".indexOf(char) != -1 ) {
+		if( "#|°¬&■▬▶◀▮".indexOf(char) != -1 ) {
 			this.write();
 			return false;
 		} if(char=="%"||char=="-") {
@@ -128,15 +160,6 @@ function Level( sketch ) {
 		return true;
 	}
 	this.mirror.onCollide = this.player.onCollide;
-	this.player.onMove = function(pos) {
-		if(pos.isEqualTo(this.star.cursor))
-			this.isOnStar = true;
-		else {
-			this.isOnStar = false;
-			this.star.write();
-		}
-	}
-	this.mirror.onMove = this.player.onMove;
 
 	this.status = 0;
 }
@@ -164,6 +187,45 @@ Level.prototype.toString = function() {
 }
 Level.prototype.onStatusChange = function() {}
 
+Level.prototype.turn = function() {
+	var playerOnStar, mirrorOnStar;
+	if( this.player.cursor.isEqualTo(this.player.star.cursor) )
+		playerOnStar = true;
+	else
+		this.player.star.write();
+	
+	if( this.mirror.cursor.isEqualTo(this.mirror.star.cursor) )
+		mirrorOnStar = true;
+	else
+		this.mirror.star.write();
+	
+	if( playerOnStar && mirrorOnStar ) {
+		this.status = 1;
+		this.onStatusChange();
+		return;
+	}
+	
+	this.switches.forEach(function(swch) {
+		var onKey;
+		swch.keyObjects.forEach(function(keyObj) {
+			if( this.player.cursor.isEqualTo( keyObj.cursor ) ||
+			    this.mirror.cursor.isEqualTo( keyObj.cursor ) )
+			    onKey = true;
+			else
+				keyObj.write();
+		}, this);
+		swch.doorObjects.forEach(function(doorObj) {
+			if( onKey )
+				doorObj.char = swch["door-unlocked"][doorObj.INDEX];
+			else
+				doorObj.char = swch["door-locked"][doorObj.INDEX];
+			if( !doorObj.cursor.isEqualTo( this.player.cursor ) &&
+				!doorObj.cursor.isEqualTo( this.mirror.cursor ) )
+				doorObj.write();
+		}, this);
+	}, this);
+	
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +262,7 @@ function Game() {
 			game.level.status = 1;
 			game.level.onStatusChange();
 		}
+		game.level.turn();
 		game.refresh();
 	};
 }
@@ -209,23 +272,8 @@ Game.prototype.addLevel = function( sketch ) {
 }
 Game.prototype.loadLevel = function() {
 	if( !this.levelSketches[this.currentLevel] )
-		this.level = new Level([
-			"                       ",
-			"  ⋆                 `  ",
-			"                       ",
-			"  ¡Ganaste!            ",
-			"      Juego hecho por  ",
-			"   Mauro C.B.          ",
-			"        Contactate:    ",
-			" maurocanablusa@       ",
-			"             gmail.com ",
-			"                       ",
-			"                       ",
-			"  ^                 ⋆  ",
-			"                       "
-		]);
-	else
-		this.level = new Level( this.levelSketches[ this.currentLevel ] );
+		this.currentLevel--;
+	this.level = new Level( this.levelSketches[ this.currentLevel ] );
 	this.refresh();
 
 	var game = this;
@@ -255,7 +303,7 @@ tileset.addEventListener("load", function() {
 	onTilesetLoad();
 });
 
-var lava_loop = 0;
+var lava_loop = 0, star_loop = 0;
 function canvasRenderer(map, cx) {
 	var str = map.toString();
 	var arr = str.split("\n");
@@ -266,6 +314,7 @@ function canvasRenderer(map, cx) {
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
 	lava_loop = (lava_loop + 1) % 4;
+	star_loop = (star_loop + 1) % 4;
 	
 	for( var y = 0; y < arr.length ; y ++ ) {
 		for( var x = 0; x < arr[y].length; x++ ) {
@@ -346,10 +395,11 @@ function drawCanvasTile( cx, char, x, y ) {
 		
 		case "⋆":
 			cx.drawImage( tileset,
-			             scale * 17, 0, scale, scale,
+			             scale*(0+star_loop), scale * 2, scale, scale,
 			             x * scale, y * scale, scale, scale);
 			break;
-
+			
+			// PERSONAJES MUERTOS
 		case "[":
 			cx.drawImage( tileset,
 			             scale * 13, 0, scale, scale,
@@ -368,6 +418,56 @@ function drawCanvasTile( cx, char, x, y ) {
 		case "}":
 			cx.drawImage( tileset,
 			             scale * 14, scale, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+
+			// PUERTAS
+		//▪■▬▶◀▮
+		case "■":
+			cx.drawImage( tileset,
+			             scale * 17, 0, scale, scale*3,
+			             x * scale, (y-1)*scale, scale, scale*3);
+			break;
+		case "▶":
+			cx.drawImage( tileset,
+			             scale * 18, 0, scale, scale*3,
+			             x * scale, (y-1)*scale, scale, scale*3);
+			break;
+		case "◀":
+			cx.drawImage( tileset,
+			             scale * 19, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5);
+			break;
+		case "▮":
+			cx.drawImage( tileset,
+			             scale * 21, 0, scale*1.5, scale*1.5,
+			             x * scale, y * scale, scale*1.5, scale*1.5);
+			break;
+		case "▪":
+			cx.drawImage( tileset,
+			             scale * 8, scale*2, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+			
+		//■▶◀▮ >> ▬►◄◆ PUERTAS ABIERTAS:
+		case "▬":
+			cx.drawImage( tileset,
+			             scale * 19, scale*1.5, scale, scale*1.5,
+			             x * scale, (y-0.5) * scale, scale, scale*1.5);
+			break;
+		case "►":
+			cx.drawImage( tileset,
+			             scale * 20, scale*1.5, scale, scale*1.5,
+			             x * scale, (y-0.5) * scale, scale, scale*1.5);
+			break;
+		case "◄":
+			cx.drawImage( tileset,
+			             scale * 21, scale*2, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+		case "◆":
+			cx.drawImage( tileset,
+			             scale * 22, scale*2, scale, scale,
 			             x * scale, y * scale, scale, scale);
 			break;
 

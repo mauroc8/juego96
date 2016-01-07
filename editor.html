@@ -309,9 +309,11 @@ tools.brush = function( editor, radio ) {
 	var dragEdit = new Editor( modal, {} );
 	removeEvents( document.body );
 	dragEdit.map = new Map([
-		"# &&<¬ ",
-		"  |°¬ -",
-		"^`⋆   %",
+		"^`-%",
+		"⋆&<¬",
+		"|°¬ ",
+		"  ■▶",
+		"#◀▮▪"
 	]); // TILES
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
