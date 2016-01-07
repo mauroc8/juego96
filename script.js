@@ -239,20 +239,20 @@ function Game() {
 		var code = event.keyCode;
 		if(code==37) {
 			event.preventDefault();
-			game.level.player.move(new Cursor(-1,0));
 			game.level.mirror.move(new Cursor(1,0));
+			game.level.player.move(new Cursor(-1,0));
 		} else if(code==38) {
 			event.preventDefault();
-			game.level.player.move(new Cursor(0,-1));
 			game.level.mirror.move(new Cursor(0,1));
+			game.level.player.move(new Cursor(0,-1));
 		} else if(code==39) {
 			event.preventDefault();
-			game.level.player.move(new Cursor(1,0));
 			game.level.mirror.move(new Cursor(-1,0));
+			game.level.player.move(new Cursor(1,0));
 		} else if(code==40) {
 			event.preventDefault();
-			game.level.player.move(new Cursor(0,1));
 			game.level.mirror.move(new Cursor(0,-1));
+			game.level.player.move(new Cursor(0,1));
 		} else if(code==82) { // R: restart
 			event.preventDefault();
 			game.loadLevel();
@@ -313,6 +313,7 @@ function canvasRenderer(map, cx) {
 	cx.font = scale + "px 'PT mono', monospace";
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
+
 	lava_loop = (lava_loop + 1) % 4;
 	star_loop = (star_loop + 1) % 4;
 	
@@ -333,149 +334,161 @@ function canvasRenderer(map, cx) {
 				drawCanvasTile( cx, line[x], x, y );
 		}
 	});
-}
 
-function drawCanvasTile( cx, char, x, y ) {
-	var radius = scale/2;
-	switch( char ) {
-		// PAREDES
-		case "#":
-			cx.drawImage( tileset,
-			             0, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5 );
-			break;
-		case "|":
-			cx.drawImage( tileset,
-			             scale*1.5, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5 );
-			break;
-		case "°":
-			cx.drawImage( tileset,
-			             scale*3, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5 );
-			break;
-		case "¬":
-			cx.drawImage( tileset,
-			             scale*4.5, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5 );
-			break;
-		case "&":
-			cx.drawImage( tileset,
-			             scale*6, 0, scale*1.5, scale*2,
-			             x * scale, y * scale, scale*1.5, scale*2 );
-			break;
-		case "<":
-			cx.drawImage( tileset,
-			             scale*15, 0, scale*1.5, scale*2,
-			             x * scale, y * scale, scale*1.5, scale*2 );
-			break;
-		
-		// otros
-		case "^":
-			cx.drawImage( tileset,
-			             scale*8, 0, scale, scale,
-			             x * scale, y * scale, scale, scale );
-			break;
-		case "`":
-			cx.drawImage( tileset,
-			             scale*8, scale, scale, scale,
-			             x * scale, y * scale, scale, scale );
-			break;
-		
-		case "%":
-			cx.drawImage( tileset,
-			             scale*(9 + lava_loop), scale, scale, scale,
-			             x * scale, y * scale, scale, scale );
-			break;
-		case "-":
-			cx.drawImage( tileset,
-			             scale*(9 + lava_loop), 0, scale, scale,
-			             x * scale, y * scale, scale, scale );
-			break;
-		
-		case "⋆":
-			cx.drawImage( tileset,
-			             scale*(0+star_loop), scale * 2, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
+	function drawCanvasTile( cx, char, x, y ) {
+		var radius = scale/2;
+		switch( char ) {
+			// PAREDES
+			case "#":
+				cx.drawImage( tileset,
+				             0, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5 );
+				break;
+			case "|":
+				cx.drawImage( tileset,
+				             scale*1.5, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5 );
+				break;
+			case "°":
+				cx.drawImage( tileset,
+				             scale*3, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5 );
+				break;
+			case "¬":
+				cx.drawImage( tileset,
+				             scale*4.5, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5 );
+				break;
+			case "&":
+				cx.drawImage( tileset,
+				             scale*6, 0, scale*1.5, scale*2,
+				             x * scale, y * scale, scale*1.5, scale*2 );
+				break;
+			case "<":
+				cx.drawImage( tileset,
+				             scale*15, 0, scale*1.5, scale*2,
+				             x * scale, y * scale, scale*1.5, scale*2 );
+				break;
 			
-			// PERSONAJES MUERTOS
-		case "[":
-			cx.drawImage( tileset,
-			             scale * 13, 0, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
-		case "]":
-			cx.drawImage( tileset,
-			             scale * 14, 0, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
-		case "{":
-			cx.drawImage( tileset,
-			             scale * 13, scale, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
-		case "}":
-			cx.drawImage( tileset,
-			             scale * 14, scale, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
-
-			// PUERTAS
-		//▪■▬▶◀▮
-		case "■":
-			cx.drawImage( tileset,
-			             scale * 17, 0, scale, scale*3,
-			             x * scale, (y-1)*scale, scale, scale*3);
-			break;
-		case "▶":
-			cx.drawImage( tileset,
-			             scale * 18, 0, scale, scale*3,
-			             x * scale, (y-1)*scale, scale, scale*3);
-			break;
-		case "◀":
-			cx.drawImage( tileset,
-			             scale * 19, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5);
-			break;
-		case "▮":
-			cx.drawImage( tileset,
-			             scale * 21, 0, scale*1.5, scale*1.5,
-			             x * scale, y * scale, scale*1.5, scale*1.5);
-			break;
-		case "▪":
-			cx.drawImage( tileset,
-			             scale * 8, scale*2, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
+			// otros
+			case "^":
+				cx.drawImage( tileset,
+				             scale*8, 0, scale, scale,
+				             x * scale, y * scale, scale, scale );
+				break;
+			case "`":
+				cx.drawImage( tileset,
+				             scale*8, scale, scale, scale,
+				             x * scale, y * scale, scale, scale );
+				break;
 			
-		//■▶◀▮ >> ▬►◄◆ PUERTAS ABIERTAS:
-		case "▬":
-			cx.drawImage( tileset,
-			             scale * 19, scale*1.5, scale, scale*1.5,
-			             x * scale, (y-0.5) * scale, scale, scale*1.5);
-			break;
-		case "►":
-			cx.drawImage( tileset,
-			             scale * 20, scale*1.5, scale, scale*1.5,
-			             x * scale, (y-0.5) * scale, scale, scale*1.5);
-			break;
-		case "◄":
-			cx.drawImage( tileset,
-			             scale * 21, scale*2, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
-		case "◆":
-			cx.drawImage( tileset,
-			             scale * 22, scale*2, scale, scale,
-			             x * scale, y * scale, scale, scale);
-			break;
+			case "%":
+				cx.drawImage( tileset,
+				             scale*(9 + lava_loop), scale, scale, scale,
+				             x * scale, y * scale, scale, scale );
 
-		default:
-			cx.fillStyle = "black";
-			cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
-			cx.fillStyle = "white";
-			cx.fillText(char, x*scale+radius, y*scale+radius);
-			break;
+				break;
+			case "-":
+				cx.drawImage( tileset,
+				             scale*(9 + lava_loop), 0, scale, scale,
+				             x * scale, y * scale, scale, scale );
+				break;
+			
+			case "⋆":
+				cx.drawImage( tileset,
+				             scale*(0+star_loop), scale * 2, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+				
+				// PERSONAJES MUERTOS
+			case "[":
+				cx.drawImage( tileset,
+				             scale * 13, 0, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+			case "]":
+				cx.drawImage( tileset,
+				             scale * 14, 0, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+			case "{":
+				cx.drawImage( tileset,
+				             scale * 13, scale, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+			case "}":
+				cx.drawImage( tileset,
+				             scale * 14, scale, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+
+				// PUERTAS
+			//▪■▬▶◀▮ 
+			case "■":
+				cx.drawImage( tileset,
+				             scale * 17, 0, scale, scale*3,
+				             x * scale, (y-1)*scale, scale, scale*3);
+				break;
+			case "▶":
+				cx.drawImage( tileset,
+				             scale * 18, 0, scale, scale*3,
+				             x * scale, (y-1)*scale, scale, scale*3);
+				break;
+			case "◀":
+				cx.drawImage( tileset,
+				             scale * 19, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5);
+				break;
+			case "▮":
+				cx.drawImage( tileset,
+				             scale * 21, 0, scale*1.5, scale*1.5,
+				             x * scale, y * scale, scale*1.5, scale*1.5);
+				break;
+			case "▪":
+				cx.drawImage( tileset,
+				             scale * 8, scale*2, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+				
+			//■▶◀▮ >> ▬►◄◆ ᐁᐂ PUERTAS ABIERTAS:
+			case "▬":
+				cx.drawImage( tileset,
+				             scale * 19, scale*1.5, scale, scale*1.5,
+				             x * scale, (y-0.5) * scale, scale, scale*1.5);
+				break;
+			case "►":
+				cx.drawImage( tileset,
+				             scale * 20, scale*1.5, scale, scale*1.5,
+				             x * scale, (y-0.5) * scale, scale, scale*1.5);
+				break;
+			case "◄":
+				cx.drawImage( tileset,
+				             scale * 21, scale*2, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+			case "◆":
+				cx.drawImage( tileset,
+				             scale * 22, scale*2, scale, scale,
+				             x * scale, y * scale, scale, scale);
+				break;
+				/* shit's not working...
+			case "ᐁ":
+				cx.drawImage( tileset,
+				             scale * 23, scale * 0.5, scale, scale * 1.5,
+				             x * scale, (y-0.5) * scale, scale, scale * 1.5);
+				break;
+			case "ᐂ":
+				cx.drawImage( tileset,
+				             scale * 24, scale * 0.5, scale, scale * 1.5,
+				             x * scale, (y-0.5) * scale, scale, scale * 1.5);
+				break;
+				*/
+			default:
+				cx.fillStyle = "black";
+				cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
+				cx.fillStyle = "white";
+				cx.fillText(char, x*scale+radius, y*scale+radius);
+				break;
+		}
 	}
 }
