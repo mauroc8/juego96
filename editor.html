@@ -83,6 +83,12 @@ function Editor( parent, tools ) {
 	};
 	
 	editor.refresh( true );
+	var modals = this.toolbar.querySelectorAll(".options");
+	Array.prototype.forEach.call(modals, function(modal) {
+		var rect = this.canvas.getBoundingClientRect();
+		modal.style.left = rect.right + "px";
+		modal.style.top = rect.top + "px";
+	}, this);
 }
 
 Editor.prototype.moveHistory = function( num ) {
@@ -126,6 +132,7 @@ Editor.prototype.refresh = function( history ) {
 		if( this.history.length > 50 )
 			this.history.pop();
 	}
+	
 	
 	this.drawMap();
 	if(this.drawSelection() == false)
@@ -297,18 +304,14 @@ tools.brush = function( editor, radio ) {
 	
 	var modal = createModal("Pinceles");
 	var rect = editor.canvas.getBoundingClientRect();
-	modal.style.top = rect.top + "px";
-	modal.style.left = rect.right + "px";
 
 
 	var dragEdit = new Editor( modal, {} );
 	removeEvents( document.body );
 	dragEdit.map = new Map([
-		"           ",
-		" # |°¬ & < ",
-		"           ",
-		" ^`⋆   %-  ",
-		"           "
+		"# &&<¬ ",
+		"  |°¬ -",
+		"^`⋆   %",
 	]); // TILES
 	dragEdit.refresh();
 	dragEdit.canvas.addEventListener("click", function(event) {
@@ -338,8 +341,6 @@ tools.selection = function( editor, radio ) {
 
 	var modal = createModal("Funciones");
 	var rect = editor.canvas.getBoundingClientRect();
-	modal.style.top = rect.top + "px";
-	modal.style.left = rect.right + "px";
 
 	modal.id = "selectionOpt";
 	div.appendChild(modal);
@@ -595,8 +596,6 @@ tools.changeSize = function( editor, radio ) {
 	div.appendChild( span );
 	var opt = createModal("Tamaño");
 	var rect = editor.canvas.getBoundingClientRect();
-	opt.style.top = rect.top + "px";
-	opt.style.left = rect.right + "px";
 	var TVControllers = elt("div", {class: "TVControllers"});
 	var directions = ["up", "down", "left", "right"];
 	directions.forEach(function(direction) {
@@ -648,8 +647,6 @@ tools.maps = function( editor, radio ) {
 	
 	var modal = createModal("Mapas");
 	var rect = editor.canvas.getBoundingClientRect();
-	modal.style.top = rect.top + "px";
-	modal.style.left = rect.right + "px";
 
 	div.appendChild( modal );
 	var buttonCont = elt("div", {id: "maptools"});

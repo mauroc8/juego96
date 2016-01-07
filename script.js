@@ -142,7 +142,15 @@ function Level( sketch ) {
 }
 
 function getDeadChar(player, lavaType) {
-	return "%";
+	if( player == "^") {
+		if( lavaType == "%" ) {
+			return "[";
+		} else return "]";
+	} else {
+		if( lavaType == "%" ) {
+			return "{";
+		} else return "}";
+	}
 }
 
 Level.prototype.pause = function() {
@@ -332,15 +340,37 @@ function drawCanvasTile( cx, char, x, y ) {
 			break;
 		case "-":
 			cx.drawImage( tileset,
-			             scale*(9 + lava_loop%2 ), 0, scale, scale,
+			             scale*(9 + lava_loop), 0, scale, scale,
 			             x * scale, y * scale, scale, scale );
 			break;
 		
 		case "⋆":
 			cx.drawImage( tileset,
-			             scale * 11, 0, scale, scale,
+			             scale * 17, 0, scale, scale,
 			             x * scale, y * scale, scale, scale);
 			break;
+
+		case "[":
+			cx.drawImage( tileset,
+			             scale * 13, 0, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+		case "]":
+			cx.drawImage( tileset,
+			             scale * 14, 0, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+		case "{":
+			cx.drawImage( tileset,
+			             scale * 13, scale, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+		case "}":
+			cx.drawImage( tileset,
+			             scale * 14, scale, scale, scale,
+			             x * scale, y * scale, scale, scale);
+			break;
+
 		default:
 			cx.fillStyle = "black";
 			cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
