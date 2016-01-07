@@ -163,19 +163,20 @@ function Level( sketch ) {
 	this.mirror.onCollide = this.player.onCollide;
 
 	this.status = 0;
-}
-
-function getDeadChar(player, lavaType) {
-	if( player == "^") {
-		if( lavaType == "%" ) {
-			return "[";
-		} else return "]";
-	} else {
-		if( lavaType == "%" ) {
-			return "{";
-		} else return "}";
+	
+	function getDeadChar(player, lavaType) {
+		if( player == "^") {
+			if( lavaType == "%" ) {
+				return "[";
+			} else return "]";
+		} else {
+			if( lavaType == "%" ) {
+				return "{";
+			} else return "}";
+		}
 	}
 }
+
 
 Level.prototype.pause = function() {
 	this.player.freeze = this.mirror.freeze = true;

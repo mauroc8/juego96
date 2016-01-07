@@ -688,9 +688,11 @@ tools.maps = function( editor, radio ) {
 	var hr = elt("hr");
 	var imp = elt("button", {type: "button"}); imp.textContent = "Importar";
 	var exp = elt("button", {type: "button"}); exp.textContent = "Exportar";
-	var impAll = elt("input", {type: "file"}); impAll.textContent = "Importar desde archivo";
-	var expAll = elt("button", {type: "button"}); expAll.textContent = "Exportar desde archivo";
-	addChilds( buttonCont, search, list, save, open, erase, hr, imp, exp, impAll, expAll );
+	var impAll = elt("input", {type: "file"});
+	var impAllContainer = elt("div"); impAllContainer.textContent = "Importar desde archivo";
+	impAllContainer.appendChild(impAll);
+	var expAll = elt("button", {type: "button"}); expAll.textContent = "Exportar a archivo";
+	addChilds( buttonCont, search, list, save, open, erase, hr, imp, exp, impAllContainer, expAll );
 	
 	
 	function ACTUALIZAR() {
@@ -799,6 +801,7 @@ tools.maps = function( editor, radio ) {
 		if( list.querySelector(".active") )
 			list.querySelector("li").className = "";
 	});
+	
 	exp.addEventListener("click", function() {
 		var popup = createPopUp("Exportar",
 			"<p>Tu mapa:</p><hr />");
@@ -826,14 +829,64 @@ tools.maps = function( editor, radio ) {
 		if( this.files.length == 0 ) return;
 		var reader = new FileReader();
 		reader.addEventListener("load", function(event) {
-			var resultURL = event.target.result;
-			console.log( decodeURI(resultURL) );
+
+			try {
+				eval(reader.result);
+				removeEvents(window);
+			} catch(e) {
+				createPopUp(e.toString())
+			}
+
+			var game = getGAME();
+			var levels = game.levelSketches;
+			var maps = JSON.parse(localStorage.getItem("mapList")) || [];
+			levels.forEach(function(sketch, i) {
+				var nombre = "GAME_LEVEL "+ zeroPad(i);
+				if( maps.indexOf(nombre) != -1 )
+						maps.splice( maps.indexOf(nombre), 1 );
+				maps.unshift( nombre );
+				localStorage.setItem( "map"+ nombre, JSON.stringify( sketch ) ); 
+			});
+			localStorage.setItem( "mapList", JSON.stringify(maps) );
+			ACTUALIZAR();
+
 		});
-		reader.readAsDataURL( this.files[0] )
+		reader.readAsText( this.files[0] );
+	});
+
+	function zeroPad(n) {
+		if(n < 10) return "0" + String(n);
+		else return String(n);
+	}
+
+	expAll.addEventListener("click", function() {
+		var maps = JSON.parse(localStorage.getItem("mapList")) || [];
+		maps = maps.filter(function(nombre) {
+			if( nombre.indexOf("GAME_LEVEL")== 0 )
+				return true;
+			else return false;
+		});
+		maps.sort(function(a,b) {
+			if(a<b) return -1;
+			if(a>b) return 1;
+			return 0;
+		});
+		var file =
+		"function getGAME() {\n"+
+		"	var game = new Game();\n";
+		maps.forEach(function(nombre) {
+			file += '	game.addLevel(\n["';
+			file += JSON.parse( localStorage.getItem( "map"+ nombre ) ).join('",\n\t"');
+			file += ");\n";
+		});
+		file += "	return game;\n";
+		file += "}";
+		downloadTextFile("application/javascript", "niveles.js", file);
 	});
 		
 	return div;
 }
+
 
 function addChilds( parent ) {
 	for( var i = 1; i < arguments.length; i++ ) {
