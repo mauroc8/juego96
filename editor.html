@@ -359,6 +359,11 @@ tools.selection = function( editor, radio ) {
 		"copy": {
 			content: "↬ Copiar <small>(Ctrl+Shift)</small>",
 			title: "Arrastrar el mouse para copiar la selección. También puede hacerse con 'Shift'."
+		},
+		"switch": {
+			content: " Cambiar de lugar",
+			title: "Mueve lo que tenés seleccionado a un lado, y lo que está en ese lado lo poné"+
+			" en donde estaba la selección."
 		}
 	};
 	var buttons = {
@@ -469,9 +474,8 @@ tools.selection = function( editor, radio ) {
 		editor.canvas.onmousedown = function(event) {
 			mouse = event.which;
 			if( mouse == 1 ) {
-				if( event.ctrlKey || tool == "move" || tool == "copy" ) {
-					var i = 0, current;
-					
+				if( event.ctrlKey || tool == "move" || tool == "copy" || tool== "switch" ) {
+
 					var curs = getCursorPos( this, event );
 					if( editor.map.grid.isInside(curs) ) relativePosFromSelection = curs;
 
@@ -494,7 +498,7 @@ tools.selection = function( editor, radio ) {
 			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
 
 			if( mouse == 1 ) {
-				if( event.ctrlKey || tool == "move" || tool=="copy" ) {
+				if( event.ctrlKey || tool == "move" || tool=="copy" || tool =="switch" ) {
 					var current_pos = getCursorPos( this, event );
 					var change = relativePosFromSelection.minus( current_pos );
 					relativePosFromSelection = current_pos;
@@ -523,7 +527,7 @@ tools.selection = function( editor, radio ) {
 							editor.map.grid.set( cursor, selectedText[i] );
 							i++;
 						});
-					} else {
+					} else { // MOVE
 						selectionForEach( oldSelection, function(cursor) {
 							selectedText += editor.map.grid.get(cursor) || " ";
 							editor.map.grid.set(cursor, " ");
@@ -534,7 +538,19 @@ tools.selection = function( editor, radio ) {
 						});
 					}
 					editor.refresh( true );
-				} else if( tool == "select" ) {
+				} else if( tool =="switch") {
+					var oldText = "", selectionCursors = [];
+					selectionForEach( oldSelection, function(cursor) {
+						oldText += editor.map.grid.get(cursor) || " ";
+						selectionCursors.push(cursor);
+					});
+					var i = 0;
+					selectionForEach( editor.selection, function(cursor) {
+						//editor.map.grid.set(  )
+						i++;
+					});
+					
+				}else if( tool == "select" ) {
 					editor.refresh();
 				}
 				if( editor.selection != null && editor.selection[0].isEqualTo( editor.selection[1] ) )

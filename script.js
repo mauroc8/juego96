@@ -317,15 +317,16 @@ function canvasRenderer(map, cx) {
 	lava_loop = (lava_loop + 1) % 4;
 	star_loop = (star_loop + 1) % 4;
 	
-	for( var y = 0; y < arr.length ; y ++ ) {
-		for( var x = 0; x < arr[y].length; x++ ) {
+	
 			//fondo
-			if( (x + y) % 2 == 0 )
-				cx.fillStyle = "#bfbfbf";
-			else cx.fillStyle = "#1e1e1e";
-			cx.fillRect(x*scale,y*scale,scale,scale);
-		}
-	}
+	cx.fillStyle = "#bfbfbf";
+	cx.fillRect( 0, 0, cx.canvas.width, cx.canvas.height );
+	cx.fillStyle = "#1e1e1e";
+	for( var y = 0; y < arr.length ; y ++ )
+		for( var x = 0; x < arr[y].length; x++ )
+			if( (x + y) % 2 == 1 )
+				cx.fillRect(x*scale,y*scale,scale,scale);
+
 	
 	arr.forEach(function(line, y) {
 		for(var x = 0; x<line.length;x++) {
