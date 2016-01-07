@@ -293,6 +293,10 @@ tools.brush = function( editor, radio ) {
 		}
 		if(mouse == 2) {
 			brush = editor.map.grid.get( editor.cursor );
+			
+			var curs = dragEdit.map.grid.look( brush );
+			dragEdit.cursor = curs.length ? curs[0] : new Cursor(0,0);
+			dragEdit.refresh();
 			return false;
 		}
 		if(mouse == 3) {
@@ -361,9 +365,8 @@ tools.selection = function( editor, radio ) {
 			title: "Arrastrar el mouse para copiar la selección. También puede hacerse con 'Shift'."
 		},
 		"switch": {
-			content: " Cambiar de lugar",
-			title: "Mueve lo que tenés seleccionado a un lado, y lo que está en ese lado lo poné"+
-			" en donde estaba la selección."
+			content: "⇄ Cambiar de lugar",
+			title: "Cambia de lugar lo que está en un lado por lo que está en otro."
 		}
 	};
 	var buttons = {
@@ -381,7 +384,7 @@ tools.selection = function( editor, radio ) {
 			}
 		},
 		"invertX": {
-			content:"⇄ Invertir horizontal",
+			content:"↔ Invertir horizontal",
 			title: "Invertir en el eje horizontal",
 			click: function() {
 				if( editor.selection == null ) return false;
@@ -408,7 +411,7 @@ tools.selection = function( editor, radio ) {
 			}
 		},
 		"invertY":{
-			content: "⇅ Invertir vertical",
+			content: "↕ Invertir vertical",
 			title: "Invertir en el eje vertical",
 			click: function() {
 				if( editor.selection == null ) return false;
@@ -474,15 +477,16 @@ tools.selection = function( editor, radio ) {
 		editor.canvas.onmousedown = function(event) {
 			mouse = event.which;
 			if( mouse == 1 ) {
-				if( event.ctrlKey || tool == "move" || tool == "copy" || tool== "switch" ) {
-
+				if( tool== "switch" || event.ctrlKey || tool == "move" || tool == "copy"  ) {
 					var curs = getCursorPos( this, event );
 					if( editor.map.grid.isInside(curs) ) relativePosFromSelection = curs;
 
-					if( editor.selection == null )
-						editor.selection = [ relativePosFromSelection, relativePosFromSelection ];
 					oldSelection = editor.selection.slice(0);
-				} else if( tool == "select" ) {
+					
+					if( editor.selection == null)
+						editor.selection = [relativePosFromSelection, relativePosFromSelection];
+					
+				} else { //SELECT
 					var curs = getCursorPos( this, event );
 					if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
 					
@@ -498,14 +502,15 @@ tools.selection = function( editor, radio ) {
 			if( editor.map.grid.isInside(curs) ) editor.cursor = curs;
 
 			if( mouse == 1 ) {
-				if( event.ctrlKey || tool == "move" || tool=="copy" || tool =="switch" ) {
+				if( event.ctrlKey || tool == "move" || tool=="copy" ||
+				   tool =="switch" ) {
 					var current_pos = getCursorPos( this, event );
 					var change = relativePosFromSelection.minus( current_pos );
 					relativePosFromSelection = current_pos;
 					editor.selection = editor.selection.map(function(curs) {
 						return curs.minus( change );
 					});
-				} else if( tool == "select" ) {
+				} else { // SELECT
 					if(editor.selection != null)
 						editor.selection[1] = editor.cursor;
 				}
@@ -539,18 +544,24 @@ tools.selection = function( editor, radio ) {
 					}
 					editor.refresh( true );
 				} else if( tool =="switch") {
-					var oldText = "", selectionCursors = [];
+					var oldText = "", oldSelectionCursors = [];
 					selectionForEach( oldSelection, function(cursor) {
 						oldText += editor.map.grid.get(cursor) || " ";
-						selectionCursors.push(cursor);
+						oldSelectionCursors.push(cursor);
+					});
+					var i = 0, newSelectionCursors = [];
+					selectionForEach( editor.selection, function(cursor) {
+						editor.map.grid.set( oldSelectionCursors[i], editor.map.grid.get(cursor) );
+						newSelectionCursors.push(cursor);
+						i++;
 					});
 					var i = 0;
 					selectionForEach( editor.selection, function(cursor) {
-						//editor.map.grid.set(  )
+						editor.map.grid.set( newSelectionCursors[i], oldText[i] );
 						i++;
 					});
-					
-				}else if( tool == "select" ) {
+					editor.refresh(true);
+				}else {
 					editor.refresh();
 				}
 				if( editor.selection != null && editor.selection[0].isEqualTo( editor.selection[1] ) )
@@ -679,7 +690,9 @@ tools.maps = function( editor, radio ) {
 	var hr = elt("hr");
 	var imp = elt("button", {type: "button"}); imp.textContent = "Importar";
 	var exp = elt("button", {type: "button"}); exp.textContent = "Exportar";
-	addChilds( buttonCont, search, list, save, open, erase, hr, imp, exp );
+	var impAll = elt("input", {type: "file"}); impAll.textContent = "Importar desde archivo";
+	var expAll = elt("button", {type: "button"}); expAll.textContent = "Exportar desde archivo";
+	addChilds( buttonCont, search, list, save, open, erase, hr, imp, exp, impAll, expAll );
 	
 	
 	function ACTUALIZAR() {
@@ -810,6 +823,16 @@ tools.maps = function( editor, radio ) {
 		popup.appendChild(btn);
 		
 	});
+	
+	impAll.addEventListener("change",function() {
+		if( this.files.length == 0 ) return;
+		var reader = new FileReader();
+		reader.addEventListener("load", function(event) {
+			var resultURL = event.target.result;
+			console.log( decodeURI(resultURL) );
+		});
+		reader.readAsDataURL( this.files[0] )
+	});
 		
 	return div;
 }
@@ -892,6 +915,19 @@ function createPopUp(title, html) {
 }
 
 var editor = new Editor( document.querySelector("#editor"), tools );
+
+function downloadTextFile(type, filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:'+type+';charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
 
 </script>
 </body>
