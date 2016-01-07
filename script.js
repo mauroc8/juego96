@@ -148,7 +148,7 @@ function Level( sketch ) {
 	
 	var level = this;
 	this.player.onCollide = function(char, pos) {
-		if( "#|°¬&■▬▶◀▮".indexOf(char) != -1 ) {
+		if( "#|°¬&■▶◀▮".indexOf(char) != -1 ) {
 			this.write();
 			return false;
 		} if(char=="%"||char=="-") {
