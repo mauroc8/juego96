@@ -151,7 +151,7 @@ function Level( sketch ) {
 		if( "#|°¬&■▶◀▮".indexOf(char) != -1 ) {
 			this.write();
 			return false;
-		} if(char=="%"||char=="-") {
+		} if("%-{}[]".indexOf(char) != -1) {
 			this.freeze = true;
 			this.char = getDeadChar(this.char, char);
 			level.status = -1;
