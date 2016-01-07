@@ -149,7 +149,7 @@ function Level( sketch ) {
 	var level = this;
 	this.player.onCollide = function(char, pos) {
 		// COLISIONES:
-		if( "#|°¬&■▶◀▮ᐁᐂᐃ".indexOf(char) != -1 ) {
+		if( "<#|°¬&■▶◀▮ᐁᐂᐃ".indexOf(char) != -1 ) {
 			this.write();
 			return false;
 		} if("%-{}[]".indexOf(char) != -1) {
