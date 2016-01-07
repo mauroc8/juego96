@@ -304,6 +304,202 @@ tileset.addEventListener("load", function() {
 });
 
 var lava_loop = 0, star_loop = 0;
+
+
+var reservedChars = {
+	/*
+	/*   PAREDES   */
+	'#':{
+		positionX: 0,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'|':{
+		positionX: 1.5,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'°':{
+		positionX: 3,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'¬':{
+		positionX: 4.5,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'&':{
+		positionX: 6,
+		positionY: 0,
+		width: 1.5,
+		height: 2
+	},
+	'<':{
+		positionX: 15,
+		positionY: 0,
+		width: 1.5,
+		height: 2
+	},
+	/*
+	/*   OTROS    */
+	'^':{
+		positionX: 8,
+		positionY: 1,
+		width: 1,
+		height: 1
+	},
+	'`':{
+		positionX: 8,
+		positionY: 0,
+		width: 1,
+		height: 1
+	},
+	'%':{
+		positionX: '(9 + lava_loop)',
+		positionY: 1,
+		width: 1,
+		height: 1
+	},
+	'-':{
+		positionX: '(9 + lava_loop)',
+		positionY: 0,
+		width: 1,
+		height: 1
+	},
+	'⋆':{
+		positionX: '(0 + star_loop)',
+		positionY: 2,
+		width: 1,
+		height: 1
+	},
+	/*
+	/*   PERSONAJES (y pers. muertos)    */
+	'[':{
+		positionX: 13,
+		positionY: 0,
+		width: 1,
+		height: 1
+	},
+	']':{
+		positionX: 14,
+		positionY: 0,
+		width: 1,
+		height: 1
+	},
+	'{':{
+		positionX: 13,
+		positionY: 1,
+		width: 1,
+		height: 1
+	},
+	'}':{
+		positionX: 14,
+		positionY: 1,
+		width: 1,
+		height: 1
+	},
+	/* ▪■▬▶◀▮
+	/*     PUERTAS    */
+	'■':{
+		positionX: 17,
+		positionY: 0,
+		width: 1,
+		height: 3,
+		offsetX: 0,
+		offsetY: -1
+	},
+	'▶':{
+		positionX: 18,
+		positionY: 0,
+		width: 1,
+		height: 3,
+		offsetX: 0,
+		offsetY: -1
+	},
+	'◀':{
+		positionX: 19,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'▮':{
+		positionX: 21,
+		positionY: 0,
+		width: 1.5,
+		height: 1.5
+	},
+	'ᐁ':{
+		positionX: 17,
+		positionY: 3,
+		width: 1,
+		height: 2,
+		offsetX: 0,
+		offsetY: -1
+	},
+	'ᐂ':{
+		positionX: 18,
+		positionY: 3,
+		width: 1,
+		height: 2,
+		offsetX: 0,
+		offsetY: -1
+	},
+	'ᐃ':{
+		positionX: 19,
+		positionY: 3,
+		width: 1,
+		height: 1.5
+	},
+	// Interruptor
+	'▪':{
+		positionX: 8,
+		positionY: 2,
+		width: 1,
+		height: 1
+	},
+	// Puertas abiertas... ■▶◀▮ >> ▬►◄◆
+	'▬':{
+		positionX: 19,
+		positionY: 1.5,
+		width: 1,
+		height: 1.5,
+		offsetX: 0,
+		offsetY: -0.5
+	},
+	'►':{
+		positionX: 20,
+		positionY: 1.5,
+		width: 1,
+		height: 1.5,
+		offsetX: 0,
+		offsetY: -0.5
+	},
+	'◄':{
+		positionX: 21,
+		positionY: 2,
+		width: 1,
+		height: 1
+	},
+	'◆':{
+		positionX: 22,
+		positionY: 2,
+		width: 1,
+		height: 1
+	},
+	'ᐡ':{ //abierta de: ᐃ (mirador)
+		positionX: 20,
+		positionY: 3,
+		width: 1,
+		height: 1.5
+	}
+
+};
+
 function canvasRenderer(map, cx) {
 	var str = map.toString();
 	var arr = str.split("\n");
@@ -314,6 +510,7 @@ function canvasRenderer(map, cx) {
 	cx.textAlign = "center";
 	cx.textBaseline = "middle";
 
+	// ANIMATION FRAMES DECLARATION
 	lava_loop = (lava_loop + 1) % 4;
 	star_loop = (star_loop + 1) % 4;
 	
@@ -338,158 +535,38 @@ function canvasRenderer(map, cx) {
 
 	function drawCanvasTile( cx, char, x, y ) {
 		var radius = scale/2;
-		switch( char ) {
-			// PAREDES
-			case "#":
-				cx.drawImage( tileset,
-				             0, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5 );
-				break;
-			case "|":
-				cx.drawImage( tileset,
-				             scale*1.5, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5 );
-				break;
-			case "°":
-				cx.drawImage( tileset,
-				             scale*3, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5 );
-				break;
-			case "¬":
-				cx.drawImage( tileset,
-				             scale*4.5, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5 );
-				break;
-			case "&":
-				cx.drawImage( tileset,
-				             scale*6, 0, scale*1.5, scale*2,
-				             x * scale, y * scale, scale*1.5, scale*2 );
-				break;
-			case "<":
-				cx.drawImage( tileset,
-				             scale*15, 0, scale*1.5, scale*2,
-				             x * scale, y * scale, scale*1.5, scale*2 );
-				break;
-			
-			// otros
-			case "^":
-				cx.drawImage( tileset,
-				             scale*8, 0, scale, scale,
-				             x * scale, y * scale, scale, scale );
-				break;
-			case "`":
-				cx.drawImage( tileset,
-				             scale*8, scale, scale, scale,
-				             x * scale, y * scale, scale, scale );
-				break;
-			
-			case "%":
-				cx.drawImage( tileset,
-				             scale*(9 + lava_loop), scale, scale, scale,
-				             x * scale, y * scale, scale, scale );
 
-				break;
-			case "-":
-				cx.drawImage( tileset,
-				             scale*(9 + lava_loop), 0, scale, scale,
-				             x * scale, y * scale, scale, scale );
-				break;
-			
-			case "⋆":
-				cx.drawImage( tileset,
-				             scale*(0+star_loop), scale * 2, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-				
-				// PERSONAJES MUERTOS
-			case "[":
-				cx.drawImage( tileset,
-				             scale * 13, 0, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-			case "]":
-				cx.drawImage( tileset,
-				             scale * 14, 0, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-			case "{":
-				cx.drawImage( tileset,
-				             scale * 13, scale, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-			case "}":
-				cx.drawImage( tileset,
-				             scale * 14, scale, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
+		if ( reservedChars[ char ] ){
+				// ALL NUMBERS ARE RELATIVE TO 'scale'
+				// positionX refers to SPRITE POSITION RELATIVE T SPRITESHEET
+			if (!reservedChars[ char ].offsetX && !reservedChars[ char ].offsetY){
+				reservedChars[ char ].offsetY = 0; reservedChars[ char ].offsetX = 0;
+			}
 
-				// PUERTAS
-			//▪■▬▶◀▮ 
-			case "■":
-				cx.drawImage( tileset,
-				             scale * 17, 0, scale, scale*3,
-				             x * scale, (y-1)*scale, scale, scale*3);
-				break;
-			case "▶":
-				cx.drawImage( tileset,
-				             scale * 18, 0, scale, scale*3,
-				             x * scale, (y-1)*scale, scale, scale*3);
-				break;
-			case "◀":
-				cx.drawImage( tileset,
-				             scale * 19, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5);
-				break;
-			case "▮":
-				cx.drawImage( tileset,
-				             scale * 21, 0, scale*1.5, scale*1.5,
-				             x * scale, y * scale, scale*1.5, scale*1.5);
-				break;
-			case "▪":
-				cx.drawImage( tileset,
-				             scale * 8, scale*2, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-				
-			//■▶◀▮ >> ▬►◄◆ ᐁᐂ PUERTAS ABIERTAS:
-			case "▬":
-				cx.drawImage( tileset,
-				             scale * 19, scale*1.5, scale, scale*1.5,
-				             x * scale, (y-0.5) * scale, scale, scale*1.5);
-				break;
-			case "►":
-				cx.drawImage( tileset,
-				             scale * 20, scale*1.5, scale, scale*1.5,
-				             x * scale, (y-0.5) * scale, scale, scale*1.5);
-				break;
-			case "◄":
-				cx.drawImage( tileset,
-				             scale * 21, scale*2, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-			case "◆":
-				cx.drawImage( tileset,
-				             scale * 22, scale*2, scale, scale,
-				             x * scale, y * scale, scale, scale);
-				break;
-				/* shit's not working...
-			case "ᐁ":
-				cx.drawImage( tileset,
-				             scale * 23, scale * 0.5, scale, scale * 1.5,
-				             x * scale, (y-0.5) * scale, scale, scale * 1.5);
-				break;
-			case "ᐂ":
-				cx.drawImage( tileset,
-				             scale * 24, scale * 0.5, scale, scale * 1.5,
-				             x * scale, (y-0.5) * scale, scale, scale * 1.5);
-				break;
-				*/
-			default:
-				cx.fillStyle = "black";
-				cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
-				cx.fillStyle = "white";
-				cx.fillText(char, x*scale+radius, y*scale+radius);
-				break;
+			if ( typeof reservedChars[char].positionX !== 'number' ){
+				// ANIMATORS, Please...
+				// Use X axis to animate
+				// use following sintax in positionX: '(9 + lava_loop)'
+				// (where lava_loop is the variable that loops through turns)
+				// thanks for your attention, have a nice day.
+				try {
+					var dinamicPositionX = eval(reservedChars[char].positionX);
+				} catch(e) {
+					console.debug(e);
+				}
+			}else
+				var dinamicPositionX = reservedChars[char].positionX;
+
+			cx.drawImage( tileset,
+				dinamicPositionX * scale, reservedChars[ char ].positionY * scale,
+				(scale * reservedChars[ char ].width), (scale * reservedChars[ char ].height),
+				(x + reservedChars[ char ].offsetX ) * scale, (y + reservedChars[ char ].offsetY ) * scale,
+				(scale * reservedChars[ char ].width), (scale * reservedChars[ char ].height) );
+		}else{
+			cx.fillStyle = "black";
+			cx.fillText(char, x*scale + radius + 1, y*scale+radius+1);
+			cx.fillStyle = "white";
+			cx.fillText(char, x*scale+radius, y*scale+radius);
 		}
 	}
 }
