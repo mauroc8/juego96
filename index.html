@@ -6,10 +6,42 @@
 	<link rel="stylesheet" href="estilo.css">
     <link href='https://fonts.googleapis.com/css?family=PT+Mono' rel='stylesheet' type='text/css'>
 	<script src="script.js"></script>
-	<style>	/*solo para index.html:*/	canvas{margin: 0 auto;display: block;}</style>
+	<style>
+	/*solo para index.html:*/	canvas{margin: 0 auto;display: block;}
+	body{ 
+
+
+font-family: monospace;
+padding-top: 60px; 
+		background-color: #BFBFBF;}
+	header{
+		display: flex;
+	}
+	.info{
+		letter-spacing: -0.03em;
+		margin-left: auto;
+		white-space: nowrap;
+		width: calc(100% - 180px);
+		max-width: 420px;
+		overflow: hidden; text-overflow: ellipsis;}
+/*.info:hover {
+    background-color: white;
+    white-space: normal;
+    padding: .5em;
+    max-width:  calc(100% - 220px);
+    height: auto;
+    position: absolute;
+    top: .2em;
+    box-shadow: 0px 1px 3px rgba(0,0,0,.71);
+    right: .2em;
+}*/
+	</style>
 </head>
 <body>
+<header>
 	<h1>Juego#96</h1>
+	<div class="info"><b>Nivel:</b> <span id="currlevel"></span></div>
+</header>
 <script src="niveles.js"></script>
 <script>
 
