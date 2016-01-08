@@ -834,7 +834,7 @@ tools.maps = function( editor, radio ) {
 				eval(reader.result);
 				removeEvents(window);
 			} catch(e) {
-				createPopUp(e.toString())
+				createPopUp("ERROR", e.toString());
 			}
 
 			var game = getGAME();
@@ -877,7 +877,7 @@ tools.maps = function( editor, radio ) {
 		maps.forEach(function(nombre) {
 			file += '	game.addLevel(\n["';
 			file += JSON.parse( localStorage.getItem( "map"+ nombre ) ).join('",\n\t"');
-			file += ");\n";
+			file += '"]);\n';
 		});
 		file += "	return game;\n";
 		file += "}";
