@@ -289,9 +289,9 @@ Game.prototype.loadLevel = function() {
 			game.currentLevel++;
 			// Pasar de nivel (Buen Trabajo!)
 			try{
-				document.getElementById('currlevel').innerHTML = game.levelNames[ game.currentLevel ];
+				document.getElementById('currlevel').innerHTML = ( game.levelNames[ game.currentLevel ] ) || '';
 			}catch(e){
-
+				// in case the "#currlevel" element is undefined...
 			}
 			console.log( 'Nivel ' + game.currentLevel, game.levelNames[ game.currentLevel ]);
 		}
